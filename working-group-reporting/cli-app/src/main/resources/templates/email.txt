@@ -1,0 +1,15 @@
+Hello,
+
+You are identified as the point of contact for the working group `{name}` ({url}). We noticed that there hasn’t been an update in the last 21 days. Regular updates are essential for informing the community about progress and achievements.
+
+Could you please provide an update on the status of the working group? Here’s how to do it:
+
+	1.	Open the working group board ({url}).
+	2.	Click on the status badge in the top right corner (`on track`, `at risk`, etc.).
+	3.	Click on the `Add update` button located in the right sidebar.
+
+While you’re there, please take a moment to update the status if necessary.
+
+Your update doesn’t need to be long; a brief summary of recent activities will suffice. If there has been no recent activity, you can mention that as well. Additionally, if there are any notable achievements, demos, or publications, please include them.
+
+Thank you for your cooperation and timely updates.

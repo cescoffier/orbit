@@ -1,0 +1,53 @@
+working-groups:
+  organizations:
+    - quarkusio
+    - quarkiverse
+
+quarkus:
+  smallrye-graphql-client:
+    github:
+      url: https://api.github.com/graphql
+      header:
+        Authorization: Bearer ${GITHUB_TOKEN}
+
+  hibernate-orm:
+    database:
+      generation: update
+  datasource:
+    db-kind: sqlite
+    jdbc:
+      url: jdbc:sqlite:file:wg.db?nolock=1
+
+  langchain4j:
+    ai:
+      gemini:
+        api-key: ${GEMINI_API_KEY}
+        chat-model:
+          model-id: gemini-2.5-flash
+          temperature: 0.7
+    timeout: 1m
+
+"%prod":
+  quarkus:
+    hibernate-orm:
+      database:
+        generation: update
+    datasource:
+      db-kind: sqlite
+      jdbc:
+        url: jdbc:sqlite:file:wg.db?nolock=1
+
+"%test":
+  quarkus:
+    langchain4j:
+      ai:
+        gemini:
+          api-key: test-key
+    smallrye-graphql-client:
+      github:
+        header:
+          Authorization: Bearer test-token
+    datasource:
+      jdbc:
+        url: jdbc:sqlite:./test-wg.db
+

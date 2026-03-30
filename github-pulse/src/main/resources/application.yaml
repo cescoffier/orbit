@@ -1,0 +1,312 @@
+quarkus:
+  application:
+    name: github-pulse
+  banner:
+    enabled: false
+  log:
+    level: WARN
+    category:
+      "io.quarkus.orbit.pulse":
+        level: INFO
+  langchain4j:
+    ai:
+      gemini:
+        api-key: ${GEMINI_API_KEY}
+        chat-model:
+          model-id: gemini-2.5-flash
+  datasource:
+    db-kind: sqlite
+    jdbc:
+      url: jdbc:sqlite:pr_pulse_state.db?busy_timeout=5000
+  hibernate-orm:
+    database:
+      generation: update
+
+pr-pulse:
+  global-threshold: 60
+  github-token: ${GITHUB_TOKEN}
+  lookback-days: 14
+
+  repositories:
+    - name: "smallrye-fault-tolerance"
+      owner: "smallrye"
+      description: "SmallRye Fault Tolerance - implementation of MicroProfile Fault Tolerance"
+      rules:
+        lines-changed-weight: 0.3
+        critical-files-bonus: 25
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 45
+        enhancement-score: 25
+        bug-fix-score: 35
+        critical-paths:
+          - "implementation/core/src/main/java"
+          - "implementation/fault-tolerance/src/main/java"
+          - "api/src/main/java"
+
+    - name: "smallrye-mutiny-vertx-bindings"
+      owner: "smallrye"
+      description: "Vert.x Mutiny API bindings and code generator"
+      rules:
+        lines-changed-weight: 0.2
+        critical-files-bonus: 25
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 40
+        enhancement-score: 25
+        bug-fix-score: 30
+        critical-paths:
+          - "vertx-mutiny-code-generator/src/main/java"
+          - "vertx-mutiny-clients/vertx-mutiny-core/src/main/java"
+
+    - name: "smallrye-mutiny"
+      owner: "smallrye"
+      description: "SmallRye Mutiny - intuitive reactive programming library for Java"
+      rules:
+        lines-changed-weight: 0.4
+        critical-files-bonus: 25
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 45
+        enhancement-score: 30
+        bug-fix-score: 30
+        critical-paths:
+          - "implementation/src/main/java/io/smallrye/mutiny"
+
+    - name: "smallrye-graphql"
+      owner: "smallrye"
+      description: "SmallRye GraphQL - implementation of MicroProfile GraphQL"
+      rules:
+        lines-changed-weight: 0.3
+        critical-files-bonus: 20
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 40
+        enhancement-score: 25
+        bug-fix-score: 25
+        critical-paths:
+          - "server/implementation/src/main/java"
+          - "client/implementation/src/main/java"
+          - "common/schema-model/src/main/java"
+          - "common/schema-builder/src/main/java"
+
+    - name: "jandex"
+      owner: "smallrye"
+      description: "Java annotation indexer and offline reflection library"
+      rules:
+        lines-changed-weight: 0.4
+        critical-files-bonus: 30
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 45
+        enhancement-score: 30
+        bug-fix-score: 35
+        critical-paths:
+          - "core/src/main/java/org/jboss/jandex"
+
+    - name: "smallrye-reactive-messaging"
+      owner: "smallrye"
+      description: "SmallRye Reactive Messaging - framework for building event-driven applications"
+      rules:
+        lines-changed-weight: 0.3
+        critical-files-bonus: 20
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 45
+        enhancement-score: 30
+        bug-fix-score: 25
+        critical-paths:
+          - "smallrye-reactive-messaging-provider/src/main/java"
+          - "smallrye-reactive-messaging-kafka/src/main/java"
+          - "smallrye-reactive-messaging-rabbitmq/src/main/java"
+          - "api/src/main/java"
+
+    - name: "smallrye-open-api"
+      owner: "smallrye"
+      description: "SmallRye OpenAPI - implementation of MicroProfile OpenAPI"
+      rules:
+        lines-changed-weight: 0.3
+        critical-files-bonus: 25
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 40
+        enhancement-score: 25
+        bug-fix-score: 30
+        critical-paths:
+          - "core/src/main/java"
+          - "extension-jaxrs/src/main/java"
+
+    - name: "smallrye-stork"
+      owner: "smallrye"
+      description: "SmallRye Stork - service discovery and client-side load balancing"
+      rules:
+        lines-changed-weight: 0.3
+        critical-files-bonus: 25
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 40
+        enhancement-score: 25
+        bug-fix-score: 30
+        critical-paths:
+          - "core/src/main/java"
+          - "service-discovery"
+          - "load-balancer"
+          - "service-registration"
+
+    - name: "smallrye-common"
+      owner: "smallrye"
+      description: "SmallRye Common - shared utilities across SmallRye projects"
+      rules:
+        lines-changed-weight: 0.4
+        critical-files-bonus: 25
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 45
+        enhancement-score: 30
+        bug-fix-score: 30
+        critical-paths:
+          - "classloader/src/main/java"
+          - "resource/src/main/java"
+          - "annotation/src/main/java"
+          - "io/src/main/java"
+          - "vertx4-context/src/main/java"
+          - "vertx5-context/src/main/java"
+
+    - name: "smallrye-config"
+      owner: "smallrye"
+      description: "SmallRye Config - implementation of MicroProfile Config"
+      rules:
+        lines-changed-weight: 0.4
+        critical-files-bonus: 25
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 45
+        enhancement-score: 35
+        bug-fix-score: 30
+        critical-paths:
+          - "implementation/src/main/java/io/smallrye/config"
+          - "common/src/main/java"
+
+    - name: "smallrye-jwt"
+      owner: "smallrye"
+      description: "SmallRye JWT - implementation of MicroProfile JWT Auth"
+      rules:
+        lines-changed-weight: 0.3
+        critical-files-bonus: 25
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 40
+        enhancement-score: 20
+        bug-fix-score: 30
+        critical-paths:
+          - "implementation/common/src/main/java"
+          - "implementation/jwt-auth/src/main/java"
+          - "implementation/jwt-build/src/main/java"
+
+    - name: "smallrye-health"
+      owner: "smallrye"
+      description: "SmallRye Health - implementation of MicroProfile Health"
+      rules:
+        lines-changed-weight: 0.3
+        critical-files-bonus: 20
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 35
+        enhancement-score: 20
+        bug-fix-score: 20
+        critical-paths:
+          - "implementation/src/main/java"
+
+    - name: "smallrye-context-propagation"
+      owner: "smallrye"
+      description: "SmallRye Context Propagation - implementation of MicroProfile Context Propagation"
+      rules:
+        lines-changed-weight: 0.4
+        critical-files-bonus: 25
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 45
+        enhancement-score: 30
+        bug-fix-score: 30
+        critical-paths:
+          - "core/src/main/java/io/smallrye/context"
+
+    - name: "quarkus"
+      owner: "quarkusio"
+      description: "Quarkus - supersonic subatomic Java framework"
+      rules:
+        lines-changed-weight: 0.15
+        critical-files-bonus: 15
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 45
+        enhancement-score: 30
+        bug-fix-score: 25
+        critical-paths:
+          - "core/deployment/src/main/java"
+          - "core/runtime/src/main/java"
+          - "independent-projects/arc"
+          - "independent-projects/resteasy-reactive"
+          - "independent-projects/tools"
+
+    - name: "quarkus-http"
+      owner: "quarkusio"
+      description: "Quarkus HTTP - Undertow-based HTTP layer for Quarkus"
+      rules:
+        lines-changed-weight: 0.3
+        critical-files-bonus: 25
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 45
+        enhancement-score: 30
+        bug-fix-score: 35
+        critical-paths:
+          - "core/src/main/java"
+          - "servlet/src/main/java"
+          - "vertx/src/main/java"
+          - "websocket/core/src/main/java"
+          - "websocket/vertx/src/main/java"
+
+    - name: "quarkus-mcp-server"
+      owner: "quarkiverse"
+      description: "Quarkus MCP Server - Model Context Protocol server extension"
+      rules:
+        lines-changed-weight: 0.3
+        critical-files-bonus: 20
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 45
+        enhancement-score: 30
+        bug-fix-score: 30
+        critical-paths:
+          - "core/deployment/src/main/java"
+          - "core/runtime/src/main/java"
+          - "transports/http/runtime/src/main/java"
+          - "transports/websocket/runtime/src/main/java"
+
+    - name: "quarkus-langchain4j"
+      owner: "quarkiverse"
+      description: "Quarkus LangChain4j - LLM integration extension for Quarkus"
+      rules:
+        lines-changed-weight: 0.2
+        critical-files-bonus: 20
+        comment-activity-weight: 5
+        max-size-score: 100
+        feature-score: 45
+        enhancement-score: 30
+        bug-fix-score: 30
+        critical-paths:
+          - "core/deployment/src/main/java"
+          - "core/runtime/src/main/java"
+          - "model-providers"
+
+"%test":
+  quarkus:
+    langchain4j:
+      ai:
+        gemini:
+          api-key: test-key
+          chat-model:
+            model-id: gemini-2.5-flash
+  pr-pulse:
+    github-token: test-token

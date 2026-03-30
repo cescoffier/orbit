@@ -1,0 +1,35 @@
+# Build the working group reporting tools
+build:
+    cd .. && ./mvnw -pl working-group-reporting/cli-app,working-group-reporting/detection-app -am clean install -DskipTests
+
+# Run the CLI app in dev mode
+dev *ARGS:
+    cd cli-app && ../../mvnw compile quarkus:dev -Dquarkus.args="{{ARGS}}"
+
+# Run the detection web app in dev mode
+dev-detection:
+    cd detection-app && ../../mvnw compile quarkus:dev
+
+# Run the CLI app (after build)
+run *ARGS:
+    java --enable-preview -jar cli-app/target/quarkus-app/quarkus-run.jar {{ARGS}}
+
+# Generate a working group report
+report FROM TO OUTPUT="report.md":
+    java --enable-preview -jar cli-app/target/quarkus-app/quarkus-run.jar report --from {{FROM}} --to {{TO}} --output {{OUTPUT}}
+
+# Generate AI-powered status updates for working groups
+generate-update FROM="" TO="":
+    java --enable-preview -jar cli-app/target/quarkus-app/quarkus-run.jar generate-status-update {{ if FROM != "" { "--from " + FROM } else { "" } }} {{ if TO != "" { "--to " + TO } else { "" } }}
+
+# Add or view point of contact for a working group
+point-of-contact WG="" CONTACT="":
+    java --enable-preview -jar cli-app/target/quarkus-app/quarkus-run.jar point-of-contact {{ if WG != "" { "--working-group '" + WG + "'" } else { "" } }} {{ if CONTACT != "" { "--contact '" + CONTACT + "'" } else { "" } }}
+
+# List all working groups (runs point-of-contact with no args)
+list:
+    java --enable-preview -jar cli-app/target/quarkus-app/quarkus-run.jar point-of-contact
+
+# Generate reminder emails for inactive working groups
+reminder FROM="" TO="":
+    java --enable-preview -jar cli-app/target/quarkus-app/quarkus-run.jar reminder {{ if FROM != "" { "--from " + FROM } else { "" } }} {{ if TO != "" { "--to " + TO } else { "" } }}

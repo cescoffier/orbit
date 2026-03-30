@@ -1,0 +1,11 @@
+# Build
+build:
+    cd .. && ./mvnw -pl github-pulse -am clean install -DskipTests
+
+# Run in dev mode
+dev:
+    cd .. && ./mvnw -pl github-pulse compile quarkus:dev
+
+# Run the analysis (after build)
+run:
+    java --enable-preview -jar target/quarkus-app/quarkus-run.jar

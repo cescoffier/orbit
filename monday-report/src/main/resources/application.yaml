@@ -1,0 +1,82 @@
+quarkus:
+  banner:
+    enabled: false
+  log:
+    level: INFO
+    console:
+      format: "%d{HH:mm:ss} %-5p [%c{2.}] %s%e%n"
+  langchain4j:
+    ai:
+      gemini:
+        api-key: ${GEMINI_API_KEY}
+        timeout: 2m
+        chat-model:
+          model-id: gemini-2.5-flash
+          temperature: 0.3
+
+task-max-concurrency: 25
+github:
+  ratelimit:
+    log-interval: 60000
+
+monday-report:
+  github-token: ${GITHUB_TOKEN}
+  output-dir: reports
+  heatmap-output-dir: reports/heatmap
+  repositories:
+    - quarkusio/gizmo
+    - quarkusio/quarkus
+    - quarkusio/quarkus-calendars
+    - quarkusio/quarkus-fs-util
+    - quarkusio/quarkus-http
+    - quarkusio/quarkus-images
+    - quarkusio/quarkus-quickstarts
+    - quarkusio/quarkus-security
+    - quarkusio/quarkus-super-heroes
+    - quarkusio/quarkus-updates
+    - smallrye/jandex
+    - smallrye/jdk-classfile-backport
+    - smallrye/smallrye-async-api
+    - smallrye/smallrye-beanbag
+    - smallrye/smallrye-certificate-generator
+    - smallrye/smallrye-common
+    - smallrye/smallrye-config
+    - smallrye/smallrye-context-propagation
+    - smallrye/smallrye-converters
+    - smallrye/smallrye-fault-tolerance
+    - smallrye/smallrye-graphql
+    - smallrye/smallrye-health
+    - smallrye/smallrye-jwt
+    - smallrye/smallrye-mcp
+    - smallrye/smallrye-mutiny
+    - smallrye/smallrye-mutiny-vertx-bindings
+    - smallrye/smallrye-mutiny-zero
+    - smallrye/smallrye-open-api
+    - smallrye/smallrye-opentelemetry
+    - smallrye/smallrye-parent
+    - smallrye/smallrye-reactive-messaging
+    - smallrye/smallrye-stork
+    - smallrye/smallrye-testing
+    - quarkiverse/quarkus-amazon-services
+    - quarkiverse/quarkus-cxf
+    - quarkiverse/quarkus-flags
+    - quarkiverse/quarkus-jberet
+    - quarkiverse/quarkus-langchain4j
+    - quarkiverse/quarkus-logging-json
+    - quarkiverse/quarkus-logging-manager
+    - quarkiverse/quarkus-mcp-server
+    - quarkiverse/quarkus-openapi-generator
+    - quarkiverse/quarkus-operator-sdk
+    - quarkiverse/quarkus-quinoa
+    - quarkiverse/quarkus-rabbitmq-client
+    - quarkiverse/quarkus-roq
+
+"%test":
+  quarkus:
+    langchain4j:
+      ai:
+        gemini:
+          api-key: test-key
+  monday-report:
+    github-token: test-token
+    repositories: []

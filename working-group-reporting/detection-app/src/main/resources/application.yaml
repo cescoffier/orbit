@@ -1,0 +1,70 @@
+quarkus:
+  http:
+    port: 8080
+  smallrye-graphql-client:
+    github:
+      url: https://api.github.com/graphql
+      header:
+        Authorization: Bearer ${GITHUB_TOKEN}
+  langchain4j:
+    ai:
+      gemini:
+        chat-model:
+          model-id: gemini-2.5-flash
+        api-key: ${GEMINI_API_KEY:}
+    timeout: 1m
+
+detection:
+  lookback-days: 14
+  batch-size: 50
+
+working-groups:
+  organizations:
+    - quarkusio
+    - quarkiverse
+  repository-mapping:
+    "WG - Observability.Next":
+      - quarkusio/quarkus
+    "WG - Dev Services Lifecycle":
+      - quarkusio/quarkus
+    "WG - Quarkus Data":
+      - quarkusio/quarkus
+    "WG - Dev Star":
+      - quarkusio/quarkus
+    "WG - Graceful Shutdown":
+      - quarkusio/quarkus
+    "WG - Modularity (JPMS) and JLink":
+      - quarkusio/quarkus
+    "WG - Unified Event Bus":
+      - quarkusio/quarkus
+    "WG - Test classloading":
+      - quarkusio/quarkus
+    "WG - Quarkus 4":
+      - quarkusio/quarkus
+    "WG - Java 25 support":
+      - quarkusio/quarkus
+    "WG - OIDC improvements":
+      - quarkusio/quarkus
+    "WG - Chappie":
+      - quarkiverse/quarkus-chappie
+      - quarkusio/quarkus
+    "WG - Spring-Style Testing":
+      - quarkusio/quarkus
+    "WG - Unified Saga implementation":
+      - quarkusio/quarkus
+    "WG - Agentic Foundation and LangChain4j Next":
+      - quarkiverse/quarkus-langchain4j
+    "WG - AOT Support":
+      - quarkusio/quarkus
+
+"%test":
+  quarkus:
+    langchain4j:
+      ai:
+        gemini:
+          api-key: test-key
+    smallrye-graphql-client:
+      github:
+        header:
+          Authorization: Bearer test-token
+

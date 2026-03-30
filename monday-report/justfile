@@ -1,0 +1,18 @@
+# Build
+build:
+    cd .. && ./mvnw -pl monday-report -am clean install -DskipTests
+
+# Run in dev mode
+dev *ARGS:
+    cd .. && ./mvnw -pl monday-report compile quarkus:dev -Dquarkus.args="{{ARGS}}"
+
+# Run the weekly report (after build)
+report:
+    java --enable-preview -jar target/quarkus-app/quarkus-run.jar report
+
+report-to-vault:
+    java --enable-preview -jar target/quarkus-app/quarkus-run.jar report --output ~/vault/20-Work/Briefings/
+
+# Run the heatmap (after build)
+heatmap:
+    java --enable-preview -jar target/quarkus-app/quarkus-run.jar heatmap

@@ -1,0 +1,29 @@
+# Maven build output
+target/
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# Secrets and local state
+.env
+*.db
+
+# Runtime output
+logs/
+reports/
+
+wg.db
+report.md
+
+# OS files
+.DS_Store
+Thumbs.db
