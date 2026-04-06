@@ -12,6 +12,7 @@ import io.quarkus.orbit.monday.service.issues.StalePR;
 import io.quarkus.orbit.monday.service.support.ConcurrencyService;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
 import org.kohsuke.github.GHIssue;
 import org.kohsuke.github.GHIssueComment;
@@ -77,7 +78,8 @@ public class GitHubScanService {
         return new RepoActivity(repoName, mergedPRs, hotIssues, stalePRsChanges, awaitingReview, discussions);
     }
 
-    private List<AnalyzedDiscussion> analyzeDiscussions(String repoName) {
+    @ActivateRequestContext
+    List<AnalyzedDiscussion> analyzeDiscussions(String repoName) {
         List<Discussion> discussions = discussionService.fetchDiscussions(repoName);
         List<AnalyzedDiscussion> analyzed = new ArrayList<>();
 
