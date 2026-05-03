@@ -59,6 +59,8 @@ working-groups:
 
 "%test":
   quarkus:
+    http:
+      test-port: 0
     langchain4j:
       ai:
         gemini:
