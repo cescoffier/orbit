@@ -15,8 +15,8 @@ run *ARGS:
     java --enable-preview -jar cli-app/target/quarkus-app/quarkus-run.jar {{ARGS}}
 
 # Generate a working group report
-report FROM TO OUTPUT="report.md":
-    java --enable-preview -jar cli-app/target/quarkus-app/quarkus-run.jar report --from {{FROM}} --to {{TO}} --output {{OUTPUT}}
+report:
+    java --enable-preview -jar cli-app/target/quarkus-app/quarkus-run.jar report
 
 # Generate AI-powered status updates for working groups
 generate-update FROM="" TO="":
