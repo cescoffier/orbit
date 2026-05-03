@@ -13,10 +13,7 @@ import org.eclipse.microprofile.context.ManagedExecutor;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -41,21 +38,11 @@ public class DetectionService {
     @ConfigProperty(name = "detection.batch-size", defaultValue = "50")
     int classificationBatchSize;
 
-
-    /**
-     * In-memory map of running detection runs
-     */
     Map<String, DetectionRun> runningDetections = new ConcurrentHashMap<>();
 
-    /**
-     * Start detection asynchronously - returns immediately with run ID
-     */
     public DetectionRun startDetection(int lookbackDays) {
         var run = createDetectionRun(lookbackDays);
-
-        // Execute detection in background
         executor.submit(() -> executeDetection(run));
-
         return run;
     }
 
@@ -65,9 +52,6 @@ public class DetectionService {
         return run;
     }
 
-    /**
-     * Execute detection for all configured working groups (runs in background).
-     */
     @ActivateRequestContext
     public void executeDetection(DetectionRun run) {
         Log.infof("Starting detection run %s with lookback %d days", run.id, run.lookbackDays);
@@ -77,12 +61,10 @@ public class DetectionService {
             updateProgress(run.id, "Fetching working groups...", 5);
             List<WorkingGroupBoard> allWorkingGroups = workingGroupRegistry.fetchAllWorkingGroups();
 
-            // 1.1 - Filter out LTS and completed working groups
             List<WorkingGroupBoard> processableWorkingGroups = allWorkingGroups.stream()
                     .filter(WorkingGroupBoard::shouldProcess)
                     .toList();
 
-            // 1.2 - Identify working groups without repository mappings
             List<String> wgsWithoutRepos = processableWorkingGroups.stream()
                     .filter(wg -> !repositoryMapping.repositoryMapping().containsKey(wg.name()))
                     .map(WorkingGroupBoard::name)
@@ -93,7 +75,6 @@ public class DetectionService {
                 Log.warnf("Found %d working groups without repository mappings: %s", wgsWithoutRepos.size(), wgsWithoutRepos);
             }
 
-            // 1.3 - Filter to only working groups with repository mappings
             List<WorkingGroupBoard> workingGroups = processableWorkingGroups.stream()
                     .filter(wg -> repositoryMapping.repositoryMapping().containsKey(wg.name()))
                     .toList();
@@ -107,64 +88,89 @@ public class DetectionService {
                     .flatMap(Collection::stream)
                     .collect(Collectors.toSet());
             Log.infof("Found %d repositories to analyze: %s", repositories.size(), repositories);
-            updateProgress(run.id, "Fetching %d  repositories...".formatted(repositories.size()), 7);
+            updateProgress(run.id, "Fetching %d repositories...".formatted(repositories.size()), 7);
 
-            // 3. Fetch issues and PR candidates from each repository. Store them per repository.
+            // 3. Fetch issues and PR candidates from each repository
             Instant cutoffDate = Instant.now().minus(run.lookbackDays, ChronoUnit.DAYS);
             for (String repository : repositories) {
                 this.repositoryService.populate(repository, cutoffDate);
             }
 
-            // 4. Associate each working group with a list of issues / PRs
-            Map<WorkingGroupBoard, List<IssueOrPR>> candidatesByWG = workingGroups.stream()
-                    .collect(Collectors.toMap(
-                            wg -> wg,
-                            wg -> {
-                                List<String> repos = repositoryMapping.repositoryMapping().get(wg.name());
-                                return repos.stream()
-                                        .flatMap(repo -> this.repositoryService.get(repo).getIssuesAndPRs().stream())
-                                        .collect(Collectors.toList());
-                            }
-                    ));
-
-            // 5. Process each working group
-            int totalWGs = workingGroups.size();
-            int processedWGs = 0;
+            // 4. Build the candidate pool per WG and filter
+            Map<String, List<IssueOrPR>> candidatesByWG = new LinkedHashMap<>();
+            Map<String, String> wgProposals = new LinkedHashMap<>();
             for (WorkingGroupBoard wg : workingGroups) {
-                List<IssueOrPR> issues = candidatesByWG.get(wg);
-                Log.infof("Processing WG: %s with %d candidates", wg.name(), issues.size());
+                List<String> repos = repositoryMapping.repositoryMapping().get(wg.name());
+                List<IssueOrPR> issues = repos.stream()
+                        .flatMap(repo -> this.repositoryService.get(repo).getIssuesAndPRs().stream())
+                        .collect(Collectors.toList());
 
-                // Filter out items already in the project of the WG
-                issues = issues.stream().filter(i -> ! this.workingGroupRegistry.hasItem(wg, i)).toList();
-
-                // Filter out issues with excluded labels (invalid, wontfix, duplicate, etc.)
+                // Filter out items already in the WG project
+                issues = issues.stream().filter(i -> !this.workingGroupRegistry.hasItem(wg, i)).toList();
+                // Filter out issues with excluded labels
                 issues = issues.stream().filter(i -> !i.hasExcludedLabel()).toList();
 
-                int wgProgress = 10 + (processedWGs * 80 / totalWGs);
-                updateProgress(run.id, String.format("Processing %s (%d/%d)", wg.name(), processedWGs + 1, totalWGs), wgProgress);
-
-                Log.infof("Found %d candidates for %s, classifying...", issues.size(), wg.name());
-
-                // Classify with AI
-                Map<IssueOrPR, Boolean> classifications = batchClassifier.classifyBatch(
-                        wg.proposal(),
-                        issues,
-                        classificationBatchSize // batch size
-                );
-
-                // Compute the final list of candidates for the WG
-                List<IssueOrPR> candidates = classifications.entrySet().stream()
-                        .filter(entry -> Boolean.TRUE.equals(entry.getValue()))
-                        .map(Map.Entry::getKey)
-                        .toList();
-                // Save them in the run
-                run.addCandidatesForWorkingGroup(wg.name(), candidates);
-                Log.infof("Matched %d/%d candidates for %s", candidates.size(), issues.size(), wg.name());
-
-                processedWGs++;
+                candidatesByWG.put(wg.name(), issues);
+                wgProposals.put(wg.name(), wg.proposal());
             }
 
-            // 6. Mark the run as completed
+            // 5. Build deduplicated candidate pool for multi-WG classification
+            //    Each unique issue is classified against ALL its candidate WGs at once,
+            //    so the AI can pick the single best match instead of saying "yes" to multiple.
+            updateProgress(run.id, "Preparing candidates for classification...", 15);
+
+            Set<IssueOrPR> allCandidates = new LinkedHashSet<>();
+            for (List<IssueOrPR> issues : candidatesByWG.values()) {
+                allCandidates.addAll(issues);
+            }
+
+            // For each candidate, determine which WGs it could belong to
+            Map<IssueOrPR, Set<String>> candidateToWGs = new LinkedHashMap<>();
+            for (IssueOrPR candidate : allCandidates) {
+                Set<String> wgs = new LinkedHashSet<>();
+                for (Map.Entry<String, List<IssueOrPR>> entry : candidatesByWG.entrySet()) {
+                    if (entry.getValue().contains(candidate)) {
+                        wgs.add(entry.getKey());
+                    }
+                }
+                candidateToWGs.put(candidate, wgs);
+            }
+
+            Log.infof("Total unique candidates: %d across %d WGs", allCandidates.size(), workingGroups.size());
+            updateProgress(run.id, "Classifying %d candidates against %d WGs...".formatted(
+                    allCandidates.size(), workingGroups.size()), 20);
+
+            // 6. Classify all candidates at once against all relevant WGs
+            //    The AI sees all WG proposals and picks the single best match for each issue
+            Map<String, String> relevantProposals = new LinkedHashMap<>();
+            for (Map.Entry<String, String> entry : wgProposals.entrySet()) {
+                if (candidatesByWG.get(entry.getKey()) != null && !candidatesByWG.get(entry.getKey()).isEmpty()) {
+                    relevantProposals.put(entry.getKey(), entry.getValue());
+                }
+            }
+
+            Map<String, List<IssueOrPR>> classificationResults = batchClassifier.classifyBatch(
+                    relevantProposals,
+                    new ArrayList<>(allCandidates),
+                    classificationBatchSize
+            );
+
+            updateProgress(run.id, "Processing classification results...", 90);
+
+            // 7. Store results - only keep matches where the issue was actually a candidate for that WG
+            for (Map.Entry<String, List<IssueOrPR>> entry : classificationResults.entrySet()) {
+                String wgName = entry.getKey();
+                Set<IssueOrPR> validCandidatesForWG = new HashSet<>(candidatesByWG.getOrDefault(wgName, List.of()));
+
+                List<IssueOrPR> validMatches = entry.getValue().stream()
+                        .filter(validCandidatesForWG::contains)
+                        .toList();
+
+                run.addCandidatesForWorkingGroup(wgName, validMatches);
+                Log.infof("Matched %d candidates for %s", validMatches.size(), wgName);
+            }
+
+            // 8. Mark the run as completed
             updateProgress(run.id, "Finalizing results...", 95);
             finalizeRun(run.id);
             updateProgress(run.id, "Completed", 100);

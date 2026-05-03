@@ -196,9 +196,13 @@
         let currentRunId = null;
         let pollInterval = null;
         let candidatesData = {};
-        let approvedItems = new Set();
+        let approvedItems = new Set(); // stores "wgName|issue.url" to track per-WG approval
         let cardIdCounter = 0;
         let warningsRendered = false;
+
+        function approvalKey(wgName, issue) {
+            return wgName + '|' + issue.url;
+        }
 
         function generateSafeId(nodeId) {
             cardIdCounter++;
@@ -379,7 +383,8 @@
 
             const typeLabel = issue.type === 'ISSUE' ? 'Issue' : 'PR';
             const badgeClass = issue.type === 'ISSUE' ? 'bg-primary' : 'bg-success';
-            const isApproved = approvedItems.has(issue.url);
+            const key = approvalKey(wgName, issue);
+            const isApproved = approvedItems.has(key);
 
             card.innerHTML = `
                 <div class="d-flex align-items-start gap-3">
@@ -423,11 +428,11 @@
                 e.preventDefault();
                 e.stopPropagation();
 
-                if (approvedItems.has(issue.url)) {
-                    approvedItems.delete(issue.url);
+                if (approvedItems.has(key)) {
+                    approvedItems.delete(key);
                     approveBtn.classList.remove('approved');
                 } else {
-                    approvedItems.add(issue.url);
+                    approvedItems.add(key);
                     approveBtn.classList.add('approved');
                 }
                 updateStats();
@@ -446,7 +451,7 @@
             const approvedByWG = {};
 
             Object.entries(candidatesData).forEach(([wgName, issues]) => {
-                const approved = issues.filter(issue => approvedItems.has(issue.url));
+                const approved = issues.filter(issue => approvedItems.has(approvalKey(wgName, issue)));
                 if (approved.length > 0) {
                     approvedByWG[wgName] = approved;
                 }
@@ -486,9 +491,9 @@
                 statusMsg.className = 'alert alert-success mt-3';
                 statusMsg.classList.remove('d-none');
 
-                Object.values(approvedByWG).forEach(issues => {
+                Object.entries(approvedByWG).forEach(([wgName, issues]) => {
                     issues.forEach(issue => {
-                        approvedItems.delete(issue.url);
+                        approvedItems.delete(approvalKey(wgName, issue));
                     });
                 });
 

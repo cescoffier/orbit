@@ -33,8 +33,9 @@ public record WorkingGroupBoard(
             return Status.PAUSED;
         }
 
-        getUpdates().sort(Comparator.comparing(StatusUpdate::createdAt).reversed());
-        var update = getUpdates().getFirst();
+        var update = getUpdates().stream()
+                .max(Comparator.comparing(StatusUpdate::createdAt))
+                .orElseThrow();
 
         // Is it completed?
         if (update.status().equals("COMPLETE")) {

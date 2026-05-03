@@ -3,20 +3,14 @@ package io.quarkus.orbit.wg.detection.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.logging.Log;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import io.quarkus.orbit.wg.detection.model.IssueOrPR;
+import io.quarkus.orbit.wg.detection.model.WorkingGroupBoard;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-/**
- * Helper service for batch classification of issues using the AI classifier.
- * Batches items to reduce API costs and improve performance.
- */
-@Singleton
+@ApplicationScoped
 public class BatchClassifier {
 
     @Inject
@@ -26,21 +20,31 @@ public class BatchClassifier {
     ObjectMapper objectMapper;
 
     /**
-     * Classify a list of candidates using batch processing with custom batch size.
+     * Classify a list of candidates against multiple Working Groups simultaneously.
+     * Each issue is assigned to at most one WG (the best match), preventing
+     * the same issue from being incorrectly associated with multiple WGs.
      *
-     * @param proposalText The working group proposal text
-     * @param candidates   List of candidates to classify
-     * @param batchSize    Number of items per batch
-     * @return Map of candidate to classification result (true = match, false = no match)
+     * @param workingGroups The working groups to classify against (name -> proposal)
+     * @param candidates    List of candidates to classify
+     * @param batchSize     Number of items per batch
+     * @return Map of WG name to list of matched issues
      */
-    public Map<IssueOrPR, Boolean> classifyBatch(String proposalText, List<IssueOrPR> candidates, int batchSize) {
-        Map<IssueOrPR, Boolean> results = new LinkedHashMap<>();
+    public Map<String, List<IssueOrPR>> classifyBatch(
+            Map<String, String> workingGroups,
+            List<IssueOrPR> candidates,
+            int batchSize) {
+
+        Map<String, List<IssueOrPR>> results = new LinkedHashMap<>();
+        for (String wgName : workingGroups.keySet()) {
+            results.put(wgName, new ArrayList<>());
+        }
 
         if (candidates.isEmpty()) {
             return results;
         }
 
-        // Process in batches
+        String wgProposalsText = buildWorkingGroupProposalsText(workingGroups);
+
         for (int i = 0; i < candidates.size(); i += batchSize) {
             int endIndex = Math.min(i + batchSize, candidates.size());
             List<IssueOrPR> batch = candidates.subList(i, endIndex);
@@ -48,27 +52,42 @@ public class BatchClassifier {
             Log.debugf("Processing batch %d-%d of %d candidates",
                     i + 1, endIndex, candidates.size());
 
-            Map<IssueOrPR, Boolean> batchResults = processBatch(proposalText, batch);
-            results.putAll(batchResults);
+            Map<IssueOrPR, String> batchResults = processBatch(wgProposalsText, workingGroups.keySet(), batch);
+
+            for (Map.Entry<IssueOrPR, String> entry : batchResults.entrySet()) {
+                String wgName = entry.getValue();
+                if (wgName != null && !wgName.isEmpty() && results.containsKey(wgName)) {
+                    results.get(wgName).add(entry.getKey());
+                }
+            }
         }
 
         return results;
     }
 
+    String buildWorkingGroupProposalsText(Map<String, String> workingGroups) {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> entry : workingGroups.entrySet()) {
+            String proposal = entry.getValue();
+            if (proposal == null || proposal.isBlank()) {
+                proposal = "(No proposal document available)";
+            }
+            sb.append("""
+                    ### %s
+                    %s
+
+                    """.formatted(entry.getKey(), truncateAndSanitize(proposal, 3000)));
+        }
+        return sb.toString();
+    }
+
     /**
-     * Process a single batch of candidates
+     * Process a single batch of candidates against all WGs
      */
-    private Map<IssueOrPR, Boolean> processBatch(String proposalText, List<IssueOrPR> batch) {
-        Map<IssueOrPR, Boolean> results = new LinkedHashMap<>();
+    Map<IssueOrPR, String> processBatch(String wgProposalsText, Set<String> wgNames, List<IssueOrPR> batch) {
+        Map<IssueOrPR, String> results = new LinkedHashMap<>();
 
         try {
-            // Build the items list for the prompt
-            // We pass items as follows:
-            // - Id: issue/PR id
-            //   Type: Issue/PR
-            //   Title: title
-            //   Description: description, truncated to 2000 chars, no breaklines
-
             StringBuilder itemsList = new StringBuilder();
 
             for (IssueOrPR issueOrPR : batch) {
@@ -86,27 +105,24 @@ public class BatchClassifier {
                         """.formatted(id, type, title, body));
             }
 
-            // Call the batch classifier
-            Log.infof("Sending batch of %d items to AI for classification", batch.size());
-            Log.debugf("Proposal text length: %d chars", proposalText != null ? proposalText.length() : 0);
-            Log.debugf("Items list:\n%s", itemsList.toString());
+            Log.infof("Sending batch of %d items to AI for multi-WG classification against %d WGs",
+                    batch.size(), wgNames.size());
 
-            String response = classifier.classifyBatch(proposalText, itemsList.toString());
+            String response = classifier.classifyBatch(wgProposalsText, itemsList.toString());
             Log.infof("Raw AI response for batch classification: %s", response);
 
-            // Parse the JSON response
-            Map<String, Boolean> parsedResults = parseJsonResponse(response, batch);
-            // Map results back to candidates
+            Map<String, String> parsedResults = parseJsonResponse(response, wgNames, batch);
+
             for (IssueOrPR issueOrPR : batch) {
-                var match = parsedResults.get(issueOrPR.getDisplayId());
+                String match = parsedResults.get(issueOrPR.getDisplayId());
                 if (match == null) {
-                    Log.warnf("No result found for item %s, defaulting to false", issueOrPR.getDisplayId());
-                    match = false;
+                    Log.warnf("No result found for item %s, defaulting to no match", issueOrPR.getDisplayId());
+                    match = "";
                 }
                 results.put(issueOrPR, match);
             }
         } catch (Exception e) {
-            Log.errorf(e, "Error in batch classification, falling back to individual classification");
+            Log.errorf(e, "Error in batch classification");
             throw new RuntimeException(e);
         }
 
@@ -126,14 +142,10 @@ public class BatchClassifier {
 
     /**
      * Parse the JSON response from the AI classifier.
-     * Expected format: {"results": {"id1": true, "id2": false, "id3": true}}
-     *
-     * @param response The raw JSON response
-     * @param batch    The batch of items processed
-     * @return Map of item number to boolean result
+     * Expected format: {"results": {"owner/repo#123": "WG - Name", "owner/repo#456": "", ...}}
      */
-    private Map<String, Boolean> parseJsonResponse(String response, List<IssueOrPR> batch) {
-        Map<String, Boolean> results = new HashMap<>();
+    Map<String, String> parseJsonResponse(String response, Set<String> validWGNames, List<IssueOrPR> batch) {
+        Map<String, String> results = new HashMap<>();
 
         if (response == null || response.trim().isEmpty()) {
             Log.warn("Empty response from batch classifier");
@@ -141,10 +153,8 @@ public class BatchClassifier {
         }
 
         try {
-            // Clean up the response - remove any markdown code blocks or extra text
             String cleanedResponse = response.trim();
 
-            // Remove markdown code blocks if present
             if (cleanedResponse.startsWith("```json")) {
                 cleanedResponse = cleanedResponse.substring(7);
             } else if (cleanedResponse.startsWith("```")) {
@@ -155,7 +165,6 @@ public class BatchClassifier {
             }
             cleanedResponse = cleanedResponse.trim();
 
-            // Parse JSON
             JsonNode root = objectMapper.readTree(cleanedResponse);
             JsonNode resultsNode = root.get("results");
 
@@ -164,34 +173,31 @@ public class BatchClassifier {
                 return results;
             }
 
-            // Extract results
             for (Map.Entry<String, JsonNode> entry : resultsNode.properties()) {
-                try {
-                    String item = entry.getKey();
-                    boolean match = entry.getValue().asBoolean();
-                    results.put(item, match);
-                    Log.debugf("Parsed JSON: Item %s -> %s", item, match ? "YES" : "NO");
-                } catch (NumberFormatException e) {
-                    Log.warnf("Could not parse item number from key: %s", entry.getKey());
+                String item = entry.getKey();
+                String wgName = entry.getValue().asText("");
+
+                if (!wgName.isEmpty() && !validWGNames.contains(wgName)) {
+                    Log.warnf("AI returned unknown WG name '%s' for item %s, treating as no match", wgName, item);
+                    wgName = "";
                 }
+
+                results.put(item, wgName);
+                Log.debugf("Parsed JSON: Item %s -> %s", item, wgName.isEmpty() ? "NO MATCH" : wgName);
             }
 
-            // Validate completeness
             if (results.size() < batch.size()) {
                 Log.warnf("Incomplete results: expected %d, got %d", batch.size(), results.size());
-
-                // Fill in missing items with false
                 for (IssueOrPR issueOrPR : batch) {
                     if (!results.containsKey(issueOrPR.getDisplayId())) {
-                        Log.warnf("Item %s missing from results, defaulting to false", issueOrPR.getDisplayId());
-                        results.put(issueOrPR.getDisplayId(), false);
+                        Log.warnf("Item %s missing from results, defaulting to no match", issueOrPR.getDisplayId());
+                        results.put(issueOrPR.getDisplayId(), "");
                     }
                 }
             }
 
         } catch (Exception e) {
             Log.errorf(e, "Failed to parse JSON response: %s", response);
-            // Return empty map to trigger fallback
         }
 
         return results;

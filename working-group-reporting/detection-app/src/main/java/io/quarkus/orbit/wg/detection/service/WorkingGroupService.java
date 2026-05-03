@@ -7,7 +7,7 @@ import io.smallrye.graphql.client.GraphQLClient;
 import io.smallrye.graphql.client.Response;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonValue;
 import io.quarkus.orbit.wg.detection.model.IssueOrPR;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-@Singleton
+@ApplicationScoped
 public class WorkingGroupService {
 
     @ConfigProperty(name = "working-groups.organizations", defaultValue = "quarkusio,quarkiverse")
