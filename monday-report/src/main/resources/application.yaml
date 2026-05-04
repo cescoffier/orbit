@@ -13,6 +13,7 @@ quarkus:
         chat-model:
           model-id: gemini-2.5-flash
           temperature: 0.3
+          max-output-tokens: 100000
 
 task-max-concurrency: 25
 github:
