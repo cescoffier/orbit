@@ -17,7 +17,7 @@ quarkus:
   datasource:
     db-kind: sqlite
     jdbc:
-      url: jdbc:sqlite:pr_pulse_state.db?busy_timeout=5000
+      url: jdbc:sqlite:pr_pulse_state.db?busy_timeout=5000&journal_mode=WAL
   hibernate-orm:
     database:
       generation: update
