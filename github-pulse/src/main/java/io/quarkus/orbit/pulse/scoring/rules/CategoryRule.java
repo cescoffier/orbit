@@ -1,6 +1,7 @@
 package io.quarkus.orbit.pulse.scoring.rules;
 
 import io.quarkus.orbit.pulse.config.PrPulseConfig;
+import io.quarkus.orbit.pulse.entity.PrClassification;
 import io.quarkus.orbit.pulse.model.PullRequestData;
 import io.quarkus.orbit.pulse.scoring.ScoringRule;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -8,6 +9,7 @@ import jakarta.inject.Named;
 import org.jboss.logging.Logger;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
 
 @ApplicationScoped
@@ -44,6 +46,16 @@ public class CategoryRule implements ScoringRule {
     }
 
     private PrCategory classifyWithRateLimit(PullRequestData pr) throws InterruptedException {
+        try {
+            Optional<PrCategory> cached = PrClassification.findCategory(pr.repoIdentifier(), pr.number());
+            if (cached.isPresent()) {
+                LOG.debugf("Using cached classification for PR #%d: %s", pr.number(), cached.get());
+                return cached.get();
+            }
+        } catch (Exception e) {
+            LOG.debugf("Cache lookup failed for PR #%d, classifying via LLM: %s", pr.number(), e.getMessage());
+        }
+
         String description = pr.description() != null ? pr.description() : "";
 
         llmSemaphore.acquire();
