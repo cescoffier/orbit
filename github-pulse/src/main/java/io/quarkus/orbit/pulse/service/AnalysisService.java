@@ -1,11 +1,15 @@
 package io.quarkus.orbit.pulse.service;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.orbit.pulse.config.PrPulseConfig;
+import io.quarkus.orbit.pulse.entity.PrClassification;
 import io.quarkus.orbit.pulse.entity.ProcessedPr;
 import io.quarkus.orbit.pulse.graphql.GitHubGraphQLClient;
 import io.quarkus.orbit.pulse.model.PullRequestData;
 import io.quarkus.orbit.pulse.model.ScoredPullRequest;
 import io.quarkus.orbit.pulse.scoring.ScoringEngine;
+import io.quarkus.orbit.pulse.scoring.rules.PrCategory;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.transaction.Transactional;
@@ -14,6 +18,7 @@ import org.jboss.logging.Logger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.StructuredTaskScope;
 
@@ -36,70 +41,91 @@ public class AnalysisService {
         Map<String, List<ScoredPullRequest>> results = new ConcurrentHashMap<>();
         List<PrPulseConfig.Repository> repos = config.repositories();
 
-        // Phase 1: fetch PRs in parallel
-        // Use Map.Entry to pair repos with their fetched PRs without creating a separate class
-        List<Map.Entry<PrPulseConfig.Repository, List<PullRequestData>>> fetched = new ArrayList<>();
+        try (var scope = StructuredTaskScope.open(StructuredTaskScope.Joiner.awaitAll())) {
+            var tasks = new ArrayList<Map.Entry<PrPulseConfig.Repository, StructuredTaskScope.Subtask<List<ScoredPullRequest>>>>();
 
-        try (var fetchScope = StructuredTaskScope.open(StructuredTaskScope.Joiner.awaitAll())) {
-            var tasks = new ArrayList<Map.Entry<PrPulseConfig.Repository, StructuredTaskScope.Subtask<List<PullRequestData>>>>();
             for (PrPulseConfig.Repository repo : repos) {
-                var task = fetchScope.fork(() -> graphQLClient.fetchMergedPRs(repo.owner(), repo.name()));
+                var task = scope.fork(() -> analyzeRepo(repo));
                 tasks.add(Map.entry(repo, task));
             }
-            fetchScope.join();
+
+            scope.join();
 
             for (var entry : tasks) {
                 var repo = entry.getKey();
                 var subtask = entry.getValue();
                 if (subtask.state() == StructuredTaskScope.Subtask.State.FAILED) {
-                    LOG.errorf("Failed to fetch PRs for %s/%s: %s",
+                    LOG.errorf("Analysis failed for %s/%s: %s",
                             repo.owner(), repo.name(), subtask.exception().getMessage());
                     continue;
                 }
-                fetched.add(Map.entry(repo, subtask.get()));
+                List<ScoredPullRequest> scored = subtask.get();
+                if (!scored.isEmpty()) {
+                    results.put(repo.owner() + "/" + repo.name(), scored);
+                }
             }
-        }
-
-        // Phase 2: score PRs in parallel
-        try (var scoreScope = StructuredTaskScope.open(StructuredTaskScope.Joiner.awaitAll())) {
-            for (var entry : fetched) {
-                var repo = entry.getKey();
-                var prs = entry.getValue();
-                scoreScope.fork(() -> {
-                    LOG.infof("Scoring PRs for %s/%s", repo.owner(), repo.name());
-                    List<ScoredPullRequest> scored = scoreAndFilter(prs, repo.rules());
-                    LOG.infof("Scored PRs for %s/%s", repo.owner(), repo.name());
-                    if (!scored.isEmpty()) {
-                        results.put(repo.owner() + "/" + repo.name(), scored);
-                    }
-                    return null;
-                });
-            }
-            scoreScope.join();
         }
 
         return results;
     }
 
     @ActivateRequestContext
-    List<ScoredPullRequest> scoreAndFilter(List<PullRequestData> prs, PrPulseConfig.Rules rules) {
-        List<ScoredPullRequest> result = new ArrayList<>();
+    List<ScoredPullRequest> analyzeRepo(PrPulseConfig.Repository repo) throws Exception {
+        LOG.infof("Analyzing %s/%s", repo.owner(), repo.name());
 
-        for (PullRequestData pr : prs) {
-            if (isAlreadyProcessed(pr)) {
-                LOG.debugf("Skipping already processed PR #%d in %s", pr.number(), pr.repoIdentifier());
-                continue;
-            }
+        List<PullRequestData> prs = graphQLClient.fetchMergedPRs(repo.owner(), repo.name());
+        LOG.infof("Fetched %d PRs for %s/%s, scoring...", prs.size(), repo.owner(), repo.name());
 
-            ScoredPullRequest scored = scoringEngine.score(pr, rules);
+        List<ScoredPullRequest> scored = scoreInParallel(prs, repo.rules());
 
-            if (scored.score() >= config.globalThreshold()) {
-                markAsProcessed(pr);
-                result.add(scored);
-            }
+        persistResults(scored);
+
+        LOG.infof("Completed %s/%s: %d PRs above threshold", repo.owner(), repo.name(), scored.size());
+        return scored;
+    }
+
+    List<ScoredPullRequest> scoreInParallel(List<PullRequestData> prs, PrPulseConfig.Rules rules) throws Exception {
+        List<PullRequestData> unprocessed = prs.stream()
+                .filter(pr -> !isAlreadyProcessed(pr))
+                .toList();
+
+        if (unprocessed.isEmpty()) {
+            return List.of();
         }
 
-        return result;
+        try (var scope = StructuredTaskScope.open(StructuredTaskScope.Joiner.awaitAll())) {
+            var tasks = new ArrayList<StructuredTaskScope.Subtask<ScoredPullRequest>>();
+
+            for (PullRequestData pr : unprocessed) {
+                tasks.add(scope.fork(() -> scoreSinglePr(pr, rules)));
+            }
+
+            scope.join();
+
+            return tasks.stream()
+                    .filter(t -> t.state() == StructuredTaskScope.Subtask.State.SUCCESS)
+                    .map(StructuredTaskScope.Subtask::get)
+                    .filter(Objects::nonNull)
+                    .toList();
+        }
+    }
+
+    private ScoredPullRequest scoreSinglePr(PullRequestData pr, PrPulseConfig.Rules rules) {
+        ManagedContext requestContext = Arc.container().requestContext();
+        requestContext.activate();
+        try {
+            ScoredPullRequest scored = scoringEngine.score(pr, rules);
+            if (scored.score() >= config.globalThreshold()) {
+                return scored;
+            }
+            return null;
+        } catch (Exception e) {
+            LOG.warnf("Scoring failed for PR #%d in %s: %s",
+                    pr.number(), pr.repoIdentifier(), e.getMessage());
+            return null;
+        } finally {
+            requestContext.terminate();
+        }
     }
 
     @Transactional
@@ -108,7 +134,16 @@ public class AnalysisService {
     }
 
     @Transactional
-    void markAsProcessed(PullRequestData pr) {
-        ProcessedPr.markProcessed(pr.repoIdentifier(), pr.number());
+    void persistResults(List<ScoredPullRequest> scoredPrs) {
+        for (ScoredPullRequest scored : scoredPrs) {
+            PullRequestData pr = scored.pr();
+
+            ProcessedPr.markProcessed(pr.repoIdentifier(), pr.number());
+
+            Object categoryObj = scored.metadata().get("category");
+            if (categoryObj instanceof PrCategory category) {
+                PrClassification.store(pr.repoIdentifier(), pr.number(), category);
+            }
+        }
     }
 }
