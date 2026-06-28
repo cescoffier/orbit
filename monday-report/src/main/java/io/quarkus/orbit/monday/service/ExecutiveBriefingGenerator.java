@@ -5,7 +5,7 @@ import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.RegisterAiService;
 import io.quarkus.orbit.monday.service.discussions.AnalyzedDiscussion;
-import io.quarkus.orbit.monday.service.issues.HotIssue;
+import io.quarkus.orbit.monday.service.issues.SummarizedHotIssue;
 import io.quarkus.orbit.monday.service.issues.MergedPR;
 import io.quarkus.orbit.monday.service.issues.StalePR;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -82,10 +82,7 @@ public interface ExecutiveBriefingGenerator {
         - [Issue #{it.number}]({it.url}): {it.title}
           - Repository: {it.repository}
           - Description: {it.description}
-          - Recent comments:
-          {#each it.comments}
-            - {it.author}: {it.body}
-          {/each}
+          - Debate summary: {it.debateSummary}
         {/each}
 
         ### Stale PRs (Changes Requested):
@@ -118,5 +115,5 @@ public interface ExecutiveBriefingGenerator {
         {/each}
 
         """)
-    String generateBriefing(String weekStart, String weekEnd, List<HotIssue> hot, List<StalePR> staled, List<StalePR> staledAwaitingReviews, List<MergedPR> merged, List<AnalyzedDiscussion> discussions);
+    String generateBriefing(String weekStart, String weekEnd, List<SummarizedHotIssue> hot, List<StalePR> staled, List<StalePR> staledAwaitingReviews, List<MergedPR> merged, List<AnalyzedDiscussion> discussions);
 }

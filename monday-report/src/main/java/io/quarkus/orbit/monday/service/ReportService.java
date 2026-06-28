@@ -2,7 +2,7 @@ package io.quarkus.orbit.monday.service;
 
 import io.quarkus.orbit.monday.config.MondayReportConfig;
 import io.quarkus.orbit.monday.service.discussions.AnalyzedDiscussion;
-import io.quarkus.orbit.monday.service.issues.HotIssue;
+import io.quarkus.orbit.monday.service.issues.SummarizedHotIssue;
 import io.quarkus.orbit.monday.service.issues.MergedPR;
 import io.quarkus.orbit.monday.service.issues.StalePR;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -41,7 +41,7 @@ public class ReportService {
         }
 
         // Build parameters.
-        List<HotIssue> allHotIssues = activeRepos.stream()
+        List<SummarizedHotIssue> allHotIssues = activeRepos.stream()
                 .flatMap(repo -> repo.hotIssues().stream())
                 .toList();
 

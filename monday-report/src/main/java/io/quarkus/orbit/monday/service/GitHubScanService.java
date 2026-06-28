@@ -7,8 +7,10 @@ import io.quarkus.orbit.monday.service.discussions.DiscussionAnalysisService;
 import io.quarkus.orbit.monday.service.discussions.GitHubDiscussionService;
 import io.quarkus.orbit.monday.service.issues.HotIssue;
 import io.quarkus.orbit.monday.service.issues.IssueComment;
+import io.quarkus.orbit.monday.service.issues.IssueSummarizationService;
 import io.quarkus.orbit.monday.service.issues.MergedPR;
 import io.quarkus.orbit.monday.service.issues.StalePR;
+import io.quarkus.orbit.monday.service.issues.SummarizedHotIssue;
 import io.quarkus.orbit.monday.service.support.ConcurrencyService;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -40,6 +42,9 @@ public class GitHubScanService {
     @Inject
     GithubService github;
 
+    @Inject
+    IssueSummarizationService issueSummarizationService;
+
     public RepoActivity scanRepository(String repoName, LocalDate weekStart, LocalDate weekEnd) throws Exception {
         Log.infof("  [%s] Scanning repository", repoName);
 
@@ -50,7 +55,7 @@ public class GitHubScanService {
         LocalDate twoWeeksAgo = LocalDate.now().minusWeeks(2);
 
         // 1: Hot Issues (>10 comments, updated last week)
-        Uni<List<HotIssue>> hotIssuesTask = executor.submit("Fetch hot issues from " + repoName, () -> fetchHotIssues(repoName, weekStartStr, weekEndStr));
+        Uni<List<SummarizedHotIssue>> hotIssuesTask = executor.submit("Fetch hot issues from " + repoName, () -> fetchAndSummarizeHotIssues(repoName, weekStartStr, weekEndStr));
 
         // 2: Merged PRs (with full details for AI analysis)
         Uni<List<MergedPR>> mergedPRsTask = executor.submit("Fetch merged PR From " + repoName, () -> fetchMergedPRs(repo, repoName, weekStartStr, weekEndStr));
@@ -69,7 +74,7 @@ public class GitHubScanService {
         var results = Uni.combine().all().unis(hotIssuesTask, mergedPRsTask, stalePRsChangesRequestedTask, awaitingReviewTask, discussionsTask).collectFailures().asTuple().await().indefinitely();
 
         // Extract
-        List<HotIssue> hotIssues = results.getItem1();
+        List<SummarizedHotIssue> hotIssues = results.getItem1();
         List<MergedPR> mergedPRs = results.getItem2();
         List<StalePR> stalePRsChanges = results.getItem3();
         List<StalePR> awaitingReview = results.getItem4();
@@ -93,6 +98,20 @@ public class GitHubScanService {
         }
 
         return analyzed;
+    }
+
+    @ActivateRequestContext
+    List<SummarizedHotIssue> fetchAndSummarizeHotIssues(String repoName, String weekStartStr, String weekEndStr) throws Exception {
+        List<HotIssue> rawIssues = fetchHotIssues(repoName, weekStartStr, weekEndStr);
+        List<SummarizedHotIssue> summarized = new ArrayList<>();
+        for (HotIssue issue : rawIssues) {
+            try {
+                summarized.add(issueSummarizationService.summarize(issue));
+            } catch (Exception e) {
+                Log.warnf(e, "Failed to summarize hot issue %s#%d", repoName, issue.number());
+            }
+        }
+        return summarized;
     }
 
     boolean isOnIce(GHIssue issue) {

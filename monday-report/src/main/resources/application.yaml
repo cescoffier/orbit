@@ -16,6 +16,7 @@ quarkus:
           max-output-tokens: 100000
 
 task-max-concurrency: 25
+llm-max-concurrency: 5
 github:
   ratelimit:
     log-interval: 60000
