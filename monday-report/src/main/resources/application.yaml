@@ -67,11 +67,10 @@ monday-report:
     - quarkiverse/quarkus-logging-json
     - quarkiverse/quarkus-logging-manager
     - quarkiverse/quarkus-mcp-server
-    - quarkiverse/quarkus-openapi-generator
     - quarkiverse/quarkus-operator-sdk
     - quarkiverse/quarkus-quinoa
-    - quarkiverse/quarkus-rabbitmq-client
     - quarkiverse/quarkus-roq
+    - quarkiverse/quarkus-http-problem
 
 "%test":
   quarkus:

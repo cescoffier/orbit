@@ -1,0 +1,10 @@
+
+
+# Generate the update status for each working group
+update:
+    java -jar target/quarkus-app/quarkus-run.jar generate-status-update
+
+# Generate the report for each working group
+report:
+    java -jar target/quarkus-app/quarkus-run.jar report    
+
