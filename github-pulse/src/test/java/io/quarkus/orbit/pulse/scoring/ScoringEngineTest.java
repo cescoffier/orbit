@@ -3,6 +3,7 @@ package io.quarkus.orbit.pulse.scoring;
 import io.quarkus.orbit.pulse.config.PrPulseConfig;
 import io.quarkus.orbit.pulse.model.PullRequestData;
 import io.quarkus.orbit.pulse.model.ScoredPullRequest;
+import io.quarkus.orbit.pulse.scoring.rules.PrCategory;
 import jakarta.enterprise.inject.Instance;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +22,7 @@ class ScoringEngineTest {
         // category: normalized=100, weight=0.35 -> 35
         ScoringRule ruleA = (pr, rules) -> new ScoringRule.ScoringResult("size", 200, 50.0, "200 lines");
         ScoringRule ruleB = (pr, rules) -> new ScoringRule.ScoringResult("category", 100, 100.0, "FEATURE",
-                Map.of("category", "FEATURE"));
+                Map.of("category", PrCategory.FEATURE));
 
         Instance<ScoringRule> instance = new FakeInstance<>(List.of(ruleA, ruleB));
         var engine = new ScoringEngine(instance);
@@ -39,7 +40,9 @@ class ScoringEngineTest {
         // 50*0.20 + 100*0.35 = 10 + 35 = 45
         assertEquals(45.0, scored.score(), 0.01);
         assertEquals(2, scored.ruleResults().size());
-        assertEquals("FEATURE", scored.metadata().get("category"));
+        assertEquals(PrCategory.FEATURE, scored.metadata().get("category"));
+        assertEquals(PrCategory.FEATURE, scored.category(), "category should be FEATURE from rule metadata");
+        assertNull(scored.summary(), "summary should be null since test rule doesn't set it");
     }
 
     @Test
@@ -60,6 +63,8 @@ class ScoringEngineTest {
         ScoredPullRequest scored = engine.score(pr, rules);
 
         assertEquals(0.0, scored.score(), 0.01);
+        assertNull(scored.category());
+        assertNull(scored.summary());
     }
 
     private static class FakeInstance<T> implements Instance<T> {

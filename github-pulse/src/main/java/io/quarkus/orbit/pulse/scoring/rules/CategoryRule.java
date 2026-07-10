@@ -1,7 +1,6 @@
 package io.quarkus.orbit.pulse.scoring.rules;
 
 import io.quarkus.orbit.pulse.config.PrPulseConfig;
-import io.quarkus.orbit.pulse.entity.PrClassification;
 import io.quarkus.orbit.pulse.model.PullRequestData;
 import io.quarkus.orbit.pulse.scoring.ScoringRule;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -9,7 +8,6 @@ import jakarta.inject.Named;
 import org.jboss.logging.Logger;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.Semaphore;
 
 @ApplicationScoped
@@ -28,34 +26,30 @@ public class CategoryRule implements ScoringRule {
     @Override
     public ScoringResult evaluate(PullRequestData pr, PrPulseConfig.Rules rules) {
         try {
-            PrCategory category = classifyWithRateLimit(pr);
+            PrClassification classification = classifyWithRateLimit(pr);
 
-            double normalized = switch (category) {
+            double normalized = switch (classification.category()) {
                 case FEATURE -> 100.0;
                 case ENHANCEMENT -> 65.0;
                 case BUG_FIX -> 35.0;
             };
 
+            Map<String, Object> metadata = new java.util.HashMap<>();
+            metadata.put("category", classification.category());
+            if (classification.summary() != null) {
+                metadata.put("summary", classification.summary());
+            }
+
             return new ScoringResult("category", normalized, normalized,
-                    "Category: %s (%.0f pts)".formatted(category, normalized),
-                    Map.of("category", category));
+                    "Category: %s (%.0f pts)".formatted(classification.category(), normalized),
+                    metadata);
         } catch (Exception e) {
             LOG.warnf("LLM classification failed for PR #%d: %s", pr.number(), e.getMessage());
             return new ScoringResult("category", 0, 0, null);
         }
     }
 
-    private PrCategory classifyWithRateLimit(PullRequestData pr) throws InterruptedException {
-        try {
-            Optional<PrCategory> cached = PrClassification.findCategory(pr.repoIdentifier(), pr.number());
-            if (cached.isPresent()) {
-                LOG.debugf("Using cached classification for PR #%d: %s", pr.number(), cached.get());
-                return cached.get();
-            }
-        } catch (Exception e) {
-            LOG.debugf("Cache lookup failed for PR #%d, classifying via LLM: %s", pr.number(), e.getMessage());
-        }
-
+    private PrClassification classifyWithRateLimit(PullRequestData pr) throws InterruptedException {
         String description = pr.description() != null ? pr.description() : "";
 
         llmSemaphore.acquire();

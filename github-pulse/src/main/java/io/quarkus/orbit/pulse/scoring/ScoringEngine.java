@@ -3,7 +3,9 @@ package io.quarkus.orbit.pulse.scoring;
 import io.quarkus.orbit.pulse.config.PrPulseConfig;
 import io.quarkus.orbit.pulse.model.PullRequestData;
 import io.quarkus.orbit.pulse.model.ScoredPullRequest;
+import io.quarkus.orbit.pulse.scoring.rules.PrCategory;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.enterprise.inject.Instance;
 
 import java.util.ArrayList;
@@ -20,6 +22,7 @@ public class ScoringEngine {
         this.rules = rules;
     }
 
+    @ActivateRequestContext
     public ScoredPullRequest score(PullRequestData pr, PrPulseConfig.Rules repoRules) {
         List<ScoringRule.ScoringResult> ruleResults = new ArrayList<>();
         Map<String, Object> metadata = new HashMap<>();
@@ -34,10 +37,12 @@ public class ScoringEngine {
             totalScore += result.normalizedPoints() * weight;
         }
 
-        return new ScoredPullRequest(pr, totalScore, ruleResults, metadata);
+        PrCategory category = metadata.get("category") instanceof PrCategory pc ? pc : null;
+        String summary = metadata.get("summary") instanceof String s ? s : null;
+        return new ScoredPullRequest(pr, totalScore, ruleResults, metadata, category, summary);
     }
 
-    private double weightForRule(String ruleName, PrPulseConfig.Rules rules) {
+    public double weightForRule(String ruleName, PrPulseConfig.Rules rules) {
         return switch (ruleName) {
             case "size" -> rules.sizeWeight();
             case "category" -> rules.categoryWeight();

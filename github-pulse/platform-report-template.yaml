@@ -1,0 +1,20 @@
+# Platform Report Input Template
+#
+# quarkus-versions: applied to quarkusio/quarkus only (list other repos under releases)
+# releases: per-repo release tags (repo name must match application.yaml)
+#
+# Before running platform-report, each release must exist in the database.
+# Use: just release-report <repo> <tag>
+
+quarkus-versions:
+  - 3.38.0.CR1
+  - 3.38.0
+
+releases:
+  smallrye-mutiny:
+    - 2.8.0
+  smallrye-stork:
+    - 2.10.0
+    - 2.10.1
+  quarkus-langchain4j:
+    - 1.11.0

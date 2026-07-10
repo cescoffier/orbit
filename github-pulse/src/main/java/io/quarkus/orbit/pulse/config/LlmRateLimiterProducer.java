@@ -3,6 +3,7 @@ package io.quarkus.orbit.pulse.config;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import java.util.concurrent.Semaphore;
 
@@ -10,7 +11,7 @@ import java.util.concurrent.Semaphore;
 public class LlmRateLimiterProducer {
 
     @Produces
-    @ApplicationScoped
+    @Singleton
     @Named("llmSemaphore")
     public Semaphore llmSemaphore() {
         return new Semaphore(15);

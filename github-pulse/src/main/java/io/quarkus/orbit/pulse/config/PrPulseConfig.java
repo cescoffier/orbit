@@ -1,5 +1,6 @@
 package io.quarkus.orbit.pulse.config;
 
+import io.quarkus.orbit.pulse.entity.RepositorySource;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
@@ -19,11 +20,23 @@ public interface PrPulseConfig {
 
     List<Repository> repositories();
 
+    enum ReleaseStrategy {
+        COMMIT_GRAPH,
+        RELEASE_NOTES
+    }
+
     interface Repository {
         String name();
         String owner();
         Optional<String> description();
+        RepositorySource source();
+        Optional<List<String>> artifacts();
         Rules rules();
+
+        @WithDefault("COMMIT_GRAPH")
+        ReleaseStrategy releaseStrategy();
+
+        Optional<String> tagPattern();
     }
 
     interface Rules {

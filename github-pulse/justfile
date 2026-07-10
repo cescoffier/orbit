@@ -9,3 +9,17 @@ dev:
 # Run the analysis (after build)
 run:
     java --enable-preview -jar target/quarkus-app/quarkus-run.jar
+
+
+score repo:
+    java --enable-preview -jar target/quarkus-app/quarkus-run.jar scores  --details {{repo}}
+
+score-and-refresh repo:
+    java --enable-preview -jar target/quarkus-app/quarkus-run.jar scores --refresh --lookback=30 --details {{repo}}
+
+
+release-report repo version:
+       java --enable-preview -jar target/quarkus-app/quarkus-run.jar release-report {{repo}} {{version}}
+
+platform-report file:
+    java --enable-preview -jar target/quarkus-app/quarkus-run.jar platform-report {{file}}

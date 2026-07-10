@@ -17,20 +17,24 @@ quarkus:
   datasource:
     db-kind: sqlite
     jdbc:
-      url: jdbc:sqlite:pr_pulse_state.db?busy_timeout=5000&journal_mode=WAL
+      url: jdbc:sqlite:github_pulse.db
   hibernate-orm:
-    database:
-      generation: update
+    schema-management:
+      strategy: update
 
 pr-pulse:
   global-threshold: 40
   github-token: ${GITHUB_TOKEN}
   lookback-days: 14
-
   repositories:
     - name: "smallrye-fault-tolerance"
+      # https://github.com/smallrye/smallrye-fault-tolerance/releases
       owner: "smallrye"
+      source: UPSTREAM
       description: "SmallRye Fault Tolerance - implementation of MicroProfile Fault Tolerance"
+      artifacts:
+        - "io.smallrye:smallrye-fault-tolerance-*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.40
@@ -43,8 +47,13 @@ pr-pulse:
           - "api/src/main/java"
 
     - name: "smallrye-mutiny-vertx-bindings"
+      # https://github.com/smallrye/smallrye-mutiny-vertx-bindings/releases
       owner: "smallrye"
+      source: UPSTREAM
       description: "Vert.x Mutiny API bindings and code generator"
+      artifacts:
+        - "io.smallrye.reactive:smallrye-mutiny-vertx-*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.35
@@ -56,8 +65,14 @@ pr-pulse:
           - "vertx-mutiny-clients/vertx-mutiny-core/src/main/java"
 
     - name: "smallrye-mutiny"
+      # https://github.com/smallrye/smallrye-mutiny/releases
       owner: "smallrye"
+      source: UPSTREAM
       description: "SmallRye Mutiny - intuitive reactive programming library for Java"
+      artifacts:
+        - "io.smallrye.reactive:mutiny"
+        - "io.smallrye.reactive:mutiny-*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.20
         category-weight: 0.35
@@ -68,8 +83,13 @@ pr-pulse:
           - "implementation/src/main/java/io/smallrye/mutiny"
 
     - name: "smallrye-graphql"
+      # https://github.com/smallrye/smallrye-graphql/releases
       owner: "smallrye"
+      source: UPSTREAM
       description: "SmallRye GraphQL - implementation of MicroProfile GraphQL"
+      artifacts:
+        - "io.smallrye:smallrye-graphql-*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.35
@@ -77,14 +97,20 @@ pr-pulse:
         comment-weight: 0.20
         size-scale-factor: 8.1
         critical-paths:
+          - "server/implementation-cdi/src/main/java"
           - "server/implementation/src/main/java"
           - "client/implementation/src/main/java"
           - "common/schema-model/src/main/java"
           - "common/schema-builder/src/main/java"
 
     - name: "jandex"
+      # https://github.com/smallrye/jandex/releases
       owner: "smallrye"
+      source: UPSTREAM
       description: "Java annotation indexer and offline reflection library"
+      artifacts:
+        - "io.smallrye:jandex"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.20
         category-weight: 0.35
@@ -95,8 +121,13 @@ pr-pulse:
           - "core/src/main/java/org/jboss/jandex"
 
     - name: "smallrye-reactive-messaging"
+      # https://github.com/smallrye/smallrye-reactive-messaging/releases
       owner: "smallrye"
+      source: UPSTREAM
       description: "SmallRye Reactive Messaging - framework for building event-driven applications"
+      artifacts:
+        - "io.smallrye.reactive:smallrye-reactive-messaging-*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.35
@@ -110,8 +141,13 @@ pr-pulse:
           - "api/src/main/java"
 
     - name: "smallrye-open-api"
+      # https://github.com/smallrye/smallrye-open-api/releases
       owner: "smallrye"
+      source: UPSTREAM
       description: "SmallRye OpenAPI - implementation of MicroProfile OpenAPI"
+      artifacts:
+        - "io.smallrye:smallrye-open-api-*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.35
@@ -123,8 +159,13 @@ pr-pulse:
           - "extension-jaxrs/src/main/java"
 
     - name: "smallrye-stork"
+      # https://github.com/smallrye/smallrye-stork/releases
       owner: "smallrye"
+      source: UPSTREAM
       description: "SmallRye Stork - service discovery and client-side load balancing"
+      artifacts:
+        - "io.smallrye.stork:stork-*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.35
@@ -138,8 +179,13 @@ pr-pulse:
           - "service-registration"
 
     - name: "smallrye-common"
+      # https://github.com/smallrye/smallrye-common/releases
       owner: "smallrye"
+      source: UPSTREAM
       description: "SmallRye Common - shared utilities across SmallRye projects"
+      artifacts:
+        - "io.smallrye.common:*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.20
         category-weight: 0.35
@@ -155,8 +201,13 @@ pr-pulse:
           - "vertx5-context/src/main/java"
 
     - name: "smallrye-config"
+      # https://github.com/smallrye/smallrye-config/releases
       owner: "smallrye"
+      source: UPSTREAM
       description: "SmallRye Config - implementation of MicroProfile Config"
+      artifacts:
+        - "io.smallrye.config:*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.20
         category-weight: 0.40
@@ -168,8 +219,13 @@ pr-pulse:
           - "common/src/main/java"
 
     - name: "smallrye-jwt"
+      # https://github.com/smallrye/smallrye-jwt/releases
       owner: "smallrye"
+      source: UPSTREAM
       description: "SmallRye JWT - implementation of MicroProfile JWT Auth"
+      artifacts:
+        - "io.smallrye:smallrye-jwt-*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.35
@@ -182,8 +238,13 @@ pr-pulse:
           - "implementation/jwt-build/src/main/java"
 
     - name: "smallrye-health"
+      # https://github.com/smallrye/smallrye-health/releases
       owner: "smallrye"
+      source: UPSTREAM
       description: "SmallRye Health - implementation of MicroProfile Health"
+      artifacts:
+        - "io.smallrye:smallrye-health-*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.35
@@ -194,8 +255,13 @@ pr-pulse:
           - "implementation/src/main/java"
 
     - name: "smallrye-context-propagation"
+      # https://github.com/smallrye/smallrye-context-propagation/releases
       owner: "smallrye"
+      source: UPSTREAM
       description: "SmallRye Context Propagation - implementation of MicroProfile Context Propagation"
+      artifacts:
+        - "io.smallrye:smallrye-context-propagation-*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.20
         category-weight: 0.35
@@ -206,8 +272,13 @@ pr-pulse:
           - "core/src/main/java/io/smallrye/context"
 
     - name: "quarkus"
+      # https://github.com/quarkusio/quarkus/releases
       owner: "quarkusio"
+      source: QUARKUS
       description: "Quarkus - supersonic subatomic Java framework"
+      artifacts:
+        - "io.quarkus:*"
+      release-strategy: RELEASE_NOTES
       rules:
         size-weight: 0.10
         category-weight: 0.40
@@ -223,7 +294,11 @@ pr-pulse:
 
     - name: "quarkus-http"
       owner: "quarkusio"
+      source: QUARKUS
       description: "Quarkus HTTP - Undertow-based HTTP layer for Quarkus"
+      artifacts:
+        - "io.quarkus.http:*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.35
@@ -238,8 +313,13 @@ pr-pulse:
           - "websocket/vertx/src/main/java"
 
     - name: "quarkus-mcp-server"
+      # https://github.com/quarkiverse/quarkus-mcp-server/releases
       owner: "quarkiverse"
+      source: QUARKIVERSE
       description: "Quarkus MCP Server - Model Context Protocol server extension"
+      artifacts:
+        - "io.quarkiverse.mcp:quarkus-mcp-server-*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.35
@@ -253,8 +333,13 @@ pr-pulse:
           - "transports/websocket/runtime/src/main/java"
 
     - name: "quarkus-langchain4j"
+      # https://github.com/quarkiverse/quarkus-langchain4j/releases
       owner: "quarkiverse"
+      source: QUARKIVERSE
       description: "Quarkus LangChain4j - LLM integration extension for Quarkus"
+      artifacts:
+        - "io.quarkiverse.langchain4j:quarkus-langchain4j-*"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.10
         category-weight: 0.40
