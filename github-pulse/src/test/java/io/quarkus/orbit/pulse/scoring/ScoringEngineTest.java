@@ -11,32 +11,61 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class ScoringEngineTest {
 
     @Test
-    void aggregatesMetadataFromAllRules() {
-        ScoringRule ruleA = (pr, rules) -> new ScoringRule.ScoringResult(10, "rule A", Map.of("keyA", "valueA"));
-        ScoringRule ruleB = (pr, rules) -> new ScoringRule.ScoringResult(20, "rule B", Map.of("keyB", "valueB"));
+    void computesWeightedAverage() {
+        // size: normalized=50, weight=0.20 -> 10
+        // category: normalized=100, weight=0.35 -> 35
+        ScoringRule ruleA = (pr, rules) -> new ScoringRule.ScoringResult("size", 200, 50.0, "200 lines");
+        ScoringRule ruleB = (pr, rules) -> new ScoringRule.ScoringResult("category", 100, 100.0, "FEATURE",
+                Map.of("category", "FEATURE"));
 
         Instance<ScoringRule> instance = new FakeInstance<>(List.of(ruleA, ruleB));
         var engine = new ScoringEngine(instance);
 
-        PullRequestData pr = new PullRequestData("owner", "repo", 1, "title", "url", "author", "desc", 10, 5, 2, List.of(), List.of());
-        ScoredPullRequest scored = engine.score(pr, null);
+        PrPulseConfig.Rules rules = mock(PrPulseConfig.Rules.class);
+        when(rules.sizeWeight()).thenReturn(0.20);
+        when(rules.categoryWeight()).thenReturn(0.35);
+        when(rules.criticalPathWeight()).thenReturn(0.25);
+        when(rules.commentWeight()).thenReturn(0.20);
 
-        assertEquals(30.0, scored.score());
-        assertEquals(2, scored.reasons().size());
-        assertEquals("valueA", scored.metadata().get("keyA"));
-        assertEquals("valueB", scored.metadata().get("keyB"));
+        PullRequestData pr = new PullRequestData("owner", "repo", 1, "title", "url", "author",
+                "desc", 10, 5, 2, List.of(), List.of());
+        ScoredPullRequest scored = engine.score(pr, rules);
+
+        // 50*0.20 + 100*0.35 = 10 + 35 = 45
+        assertEquals(45.0, scored.score(), 0.01);
+        assertEquals(2, scored.ruleResults().size());
+        assertEquals("FEATURE", scored.metadata().get("category"));
+    }
+
+    @Test
+    void unknownRuleNameGetsZeroWeight() {
+        ScoringRule ruleA = (pr, rules) -> new ScoringRule.ScoringResult("unknown-rule", 50, 80.0, "test");
+
+        Instance<ScoringRule> instance = new FakeInstance<>(List.of(ruleA));
+        var engine = new ScoringEngine(instance);
+
+        PrPulseConfig.Rules rules = mock(PrPulseConfig.Rules.class);
+        when(rules.sizeWeight()).thenReturn(0.20);
+        when(rules.categoryWeight()).thenReturn(0.35);
+        when(rules.criticalPathWeight()).thenReturn(0.25);
+        when(rules.commentWeight()).thenReturn(0.20);
+
+        PullRequestData pr = new PullRequestData("owner", "repo", 1, "title", "url", "author",
+                "desc", 10, 5, 2, List.of(), List.of());
+        ScoredPullRequest scored = engine.score(pr, rules);
+
+        assertEquals(0.0, scored.score(), 0.01);
     }
 
     private static class FakeInstance<T> implements Instance<T> {
         private final List<T> items;
         FakeInstance(List<T> items) { this.items = items; }
         @Override public Iterator<T> iterator() { return items.iterator(); }
-
-        // Unused Instance methods — minimal stubs
         @Override public Instance<T> select(java.lang.annotation.Annotation... qualifiers) { return this; }
         @Override public <U extends T> Instance<U> select(Class<U> subtype, java.lang.annotation.Annotation... qualifiers) { throw new UnsupportedOperationException(); }
         @Override public <U extends T> Instance<U> select(jakarta.enterprise.util.TypeLiteral<U> subtype, java.lang.annotation.Annotation... qualifiers) { throw new UnsupportedOperationException(); }

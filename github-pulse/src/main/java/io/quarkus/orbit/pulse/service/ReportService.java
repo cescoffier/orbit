@@ -51,8 +51,10 @@ public class ReportService {
                         scored.pr().title(),
                         scored.score()
                 ));
-                for (String reason : scored.reasons()) {
-                    sb.append("  - %s\n".formatted(reason));
+                for (var result : scored.ruleResults()) {
+                    if (result.reason() != null) {
+                        sb.append("  - %s\n".formatted(result.reason()));
+                    }
                 }
                 sb.append("\n");
             }

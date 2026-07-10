@@ -21,19 +21,29 @@ public class ScoringEngine {
     }
 
     public ScoredPullRequest score(PullRequestData pr, PrPulseConfig.Rules repoRules) {
-        double totalScore = 0;
-        List<String> reasons = new ArrayList<>();
+        List<ScoringRule.ScoringResult> ruleResults = new ArrayList<>();
         Map<String, Object> metadata = new HashMap<>();
+        double totalScore = 0;
 
         for (ScoringRule rule : rules) {
             ScoringRule.ScoringResult result = rule.evaluate(pr, repoRules);
-            totalScore += result.points();
-            if (result.reason() != null) {
-                reasons.add(result.reason());
-            }
+            ruleResults.add(result);
             metadata.putAll(result.metadata());
+
+            double weight = weightForRule(result.ruleName(), repoRules);
+            totalScore += result.normalizedPoints() * weight;
         }
 
-        return new ScoredPullRequest(pr, totalScore, reasons, metadata);
+        return new ScoredPullRequest(pr, totalScore, ruleResults, metadata);
+    }
+
+    private double weightForRule(String ruleName, PrPulseConfig.Rules rules) {
+        return switch (ruleName) {
+            case "size" -> rules.sizeWeight();
+            case "category" -> rules.categoryWeight();
+            case "critical-path" -> rules.criticalPathWeight();
+            case "comments" -> rules.commentWeight();
+            default -> 0.0;
+        };
     }
 }
