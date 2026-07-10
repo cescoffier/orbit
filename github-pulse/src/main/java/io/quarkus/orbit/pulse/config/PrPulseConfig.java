@@ -9,7 +9,7 @@ import java.util.Optional;
 @ConfigMapping(prefix = "pr-pulse")
 public interface PrPulseConfig {
 
-    @WithDefault("60")
+    @WithDefault("40")
     int globalThreshold();
 
     String githubToken();

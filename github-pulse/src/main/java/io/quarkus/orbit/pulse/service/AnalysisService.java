@@ -45,6 +45,10 @@ public class AnalysisService {
     }
 
     public Map<String, List<ScoredPullRequest>> analyzeAll() throws Exception {
+        return analyzeAll(false);
+    }
+
+    public Map<String, List<ScoredPullRequest>> analyzeAll(boolean forceRescore) throws Exception {
         Map<String, List<ScoredPullRequest>> results = new ConcurrentHashMap<>();
         List<PrPulseConfig.Repository> repos = config.repositories();
 
@@ -52,7 +56,7 @@ public class AnalysisService {
             var tasks = new ArrayList<Map.Entry<PrPulseConfig.Repository, StructuredTaskScope.Subtask<List<ScoredPullRequest>>>>();
 
             for (PrPulseConfig.Repository repo : repos) {
-                var task = scope.fork(() -> analyzeRepo(repo));
+                var task = scope.fork(() -> analyzeRepo(repo, forceRescore));
                 tasks.add(Map.entry(repo, task));
             }
 
@@ -77,9 +81,13 @@ public class AnalysisService {
     }
 
     public List<ScoredPullRequest> analyzeSingleRepo(String repoIdentifier) throws Exception {
+        return analyzeSingleRepo(repoIdentifier, true);
+    }
+
+    public List<ScoredPullRequest> analyzeSingleRepo(String repoIdentifier, boolean forceRescore) throws Exception {
         PrPulseConfig.Repository repo = findRepoConfig(repoIdentifier)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown repository: " + repoIdentifier));
-        return analyzeRepo(repo);
+        return analyzeRepo(repo, forceRescore);
     }
 
     public Optional<PrPulseConfig.Repository> findRepoConfig(String repoIdentifier) {
@@ -90,33 +98,35 @@ public class AnalysisService {
     }
 
     @ActivateRequestContext
-    List<ScoredPullRequest> analyzeRepo(PrPulseConfig.Repository repo) throws Exception {
+    List<ScoredPullRequest> analyzeRepo(PrPulseConfig.Repository repo, boolean forceRescore) throws Exception {
         LOG.infof("Analyzing %s/%s", repo.owner(), repo.name());
 
         List<PullRequestData> prs = graphQLClient.fetchMergedPRs(repo.owner(), repo.name());
         LOG.infof("Fetched %d PRs for %s/%s, scoring...", prs.size(), repo.owner(), repo.name());
 
-        List<ScoredPullRequest> scored = scoreInParallel(prs, repo);
+        List<ScoredPullRequest> scored = scoreInParallel(prs, repo, forceRescore);
 
-        persistResults(scored);
+        persistResults(scored, repo.rules());
 
         LOG.infof("Completed %s/%s: %d PRs above threshold", repo.owner(), repo.name(), scored.size());
         return scored;
     }
 
-    List<ScoredPullRequest> scoreInParallel(List<PullRequestData> prs, PrPulseConfig.Repository repo) throws Exception {
-        List<PullRequestData> unprocessed = prs.stream()
-                .filter(pr -> !isAlreadyProcessed(pr))
-                .toList();
+    List<ScoredPullRequest> scoreInParallel(List<PullRequestData> prs, PrPulseConfig.Repository repo, boolean forceRescore) throws Exception {
+        List<PullRequestData> toProcess = forceRescore
+                ? prs
+                : prs.stream()
+                    .filter(pr -> !isAlreadyProcessed(pr))
+                    .toList();
 
-        if (unprocessed.isEmpty()) {
+        if (toProcess.isEmpty()) {
             return List.of();
         }
 
         try (var scope = StructuredTaskScope.open(StructuredTaskScope.Joiner.awaitAll())) {
             var tasks = new ArrayList<StructuredTaskScope.Subtask<ScoredPullRequest>>();
 
-            for (PullRequestData pr : unprocessed) {
+            for (PullRequestData pr : toProcess) {
                 tasks.add(scope.fork(() -> scoreSinglePr(pr, repo.rules())));
             }
 
@@ -155,13 +165,19 @@ public class AnalysisService {
     }
 
     @Transactional
-    void persistResults(List<ScoredPullRequest> scoredPrs) {
+    void persistResults(List<ScoredPullRequest> scoredPrs, PrPulseConfig.Rules rules) {
         for (ScoredPullRequest scored : scoredPrs) {
             PullRequestData pr = scored.pr();
 
             RepositoryEntity repo = RepositoryEntity.findOrCreate(pr.repoOwner(), pr.repoName());
 
-            PullRequestScore score = new PullRequestScore();
+            // Upsert: look up existing score or create new
+            PullRequestScore score = PullRequestScore.<PullRequestScore>find(
+                    "repository = ?1 and prNumber = ?2", repo, pr.number())
+                    .firstResultOptional()
+                    .orElseGet(PullRequestScore::new);
+
+            // Update fields
             score.repository = repo;
             score.prNumber = pr.number();
             score.title = pr.title();
@@ -171,14 +187,19 @@ public class AnalysisService {
             score.scoredAt = Instant.now();
             score.persist();
 
+            // Clear existing details before adding new ones
+            if (!score.details.isEmpty()) {
+                score.details.clear();
+                score.flush();
+            }
+
             for (ScoringRule.ScoringResult ruleResult : scored.ruleResults()) {
-                if (ruleResult.reason() == null) continue;
                 ScoreDetail detail = new ScoreDetail();
                 detail.pullRequestScore = score;
                 detail.ruleName = ruleResult.ruleName();
                 detail.points = ruleResult.points();
                 detail.normalizedPoints = ruleResult.normalizedPoints();
-                detail.weight = weightForRule(ruleResult.ruleName(), scored);
+                detail.weight = weightForRule(ruleResult.ruleName(), rules);
                 detail.reason = ruleResult.reason();
                 if (!ruleResult.metadata().isEmpty()) {
                     detail.metadata = serializeMetadata(ruleResult.metadata());
@@ -193,12 +214,12 @@ public class AnalysisService {
         }
     }
 
-    private double weightForRule(String ruleName, ScoredPullRequest scored) {
+    private double weightForRule(String ruleName, PrPulseConfig.Rules rules) {
         return switch (ruleName) {
-            case "size" -> 0.20;
-            case "category" -> 0.35;
-            case "critical-path" -> 0.25;
-            case "comments" -> 0.20;
+            case "size" -> rules.sizeWeight();
+            case "category" -> rules.categoryWeight();
+            case "critical-path" -> rules.criticalPathWeight();
+            case "comments" -> rules.commentWeight();
             default -> 0.0;
         };
     }
