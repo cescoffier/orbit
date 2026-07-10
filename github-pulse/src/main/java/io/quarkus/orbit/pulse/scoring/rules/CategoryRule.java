@@ -30,18 +30,18 @@ public class CategoryRule implements ScoringRule {
         try {
             PrCategory category = classifyWithRateLimit(pr);
 
-            double points = switch (category) {
-                case FEATURE -> rules.featureScore();
-                case ENHANCEMENT -> rules.enhancementScore();
-                case BUG_FIX -> rules.bugFixScore();
+            double normalized = switch (category) {
+                case FEATURE -> 100.0;
+                case ENHANCEMENT -> 65.0;
+                case BUG_FIX -> 35.0;
             };
 
-            return new ScoringResult(points,
-                    "Category: %s (%d pts)".formatted(category, (int) points),
+            return new ScoringResult("category", normalized, normalized,
+                    "Category: %s (%.0f pts)".formatted(category, normalized),
                     Map.of("category", category));
         } catch (Exception e) {
             LOG.warnf("LLM classification failed for PR #%d: %s", pr.number(), e.getMessage());
-            return new ScoringResult(0, null);
+            return new ScoringResult("category", 0, 0, null);
         }
     }
 

@@ -14,21 +14,17 @@ public class CriticalPathRule implements ScoringRule {
     public ScoringResult evaluate(PullRequestData pr, PrPulseConfig.Rules rules) {
         List<String> criticalPaths = rules.criticalPaths().orElse(List.of());
         if (criticalPaths.isEmpty()) {
-            return new ScoringResult(0, null);
+            return new ScoringResult("critical-path", 0, 0, null);
         }
 
-        boolean touchesCritical = pr.filePaths().stream()
-                .anyMatch(file -> criticalPaths.stream().anyMatch(file::startsWith));
+        List<String> matched = pr.filePaths().stream()
+                .filter(file -> criticalPaths.stream().anyMatch(file::startsWith))
+                .toList();
 
-        if (touchesCritical) {
-            List<String> matched = pr.filePaths().stream()
-                    .filter(file -> criticalPaths.stream().anyMatch(file::startsWith))
-                    .toList();
-            return new ScoringResult(
-                    rules.criticalFilesBonus(),
-                    "Touches critical paths: %s".formatted(matched)
-            );
+        if (!matched.isEmpty()) {
+            return new ScoringResult("critical-path", matched.size(), 100.0,
+                    "Touches critical paths: %s".formatted(matched));
         }
-        return new ScoringResult(0, null);
+        return new ScoringResult("critical-path", 0, 0, null);
     }
 }

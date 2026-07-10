@@ -10,10 +10,12 @@ public class CommentActivityRule implements ScoringRule {
 
     @Override
     public ScoringResult evaluate(PullRequestData pr, PrPulseConfig.Rules rules) {
-        double points = pr.commentCount() * rules.commentActivityWeight();
-        String reason = points > 0
-                ? "Comment activity: %d comments (weight=%d)".formatted(pr.commentCount(), rules.commentActivityWeight())
+        int count = pr.commentCount();
+        double normalized = Math.min(count * 20.0, 100.0);
+
+        String reason = count > 0
+                ? "Comment activity: %d comments (normalized: %.0f)".formatted(count, normalized)
                 : null;
-        return new ScoringResult(points, reason);
+        return new ScoringResult("comments", count, normalized, reason);
     }
 }

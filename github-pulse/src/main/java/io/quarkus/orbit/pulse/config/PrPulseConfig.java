@@ -27,27 +27,24 @@ public interface PrPulseConfig {
     }
 
     interface Rules {
-        @WithDefault("0.5")
-        double linesChangedWeight();
+        @WithDefault("0.20")
+        double sizeWeight();
 
-        @WithDefault("20")
-        int criticalFilesBonus();
+        @WithDefault("0.35")
+        double categoryWeight();
 
-        @WithDefault("5")
-        int commentActivityWeight();
+        @WithDefault("0.25")
+        double criticalPathWeight();
+
+        @WithDefault("0.20")
+        double commentWeight();
 
         Optional<List<String>> criticalPaths();
 
         @WithDefault("100")
         int maxSizeScore();
 
-        @WithDefault("30")
-        int featureScore();
-
-        @WithDefault("20")
-        int enhancementScore();
-
-        @WithDefault("10")
-        int bugFixScore();
+        @WithDefault("8.1")
+        double sizeScaleFactor();
     }
 }

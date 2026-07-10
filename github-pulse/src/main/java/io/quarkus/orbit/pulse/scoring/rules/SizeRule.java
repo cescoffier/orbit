@@ -11,14 +11,14 @@ public class SizeRule implements ScoringRule {
     @Override
     public ScoringResult evaluate(PullRequestData pr, PrPulseConfig.Rules rules) {
         int totalLines = pr.additions() + pr.deletions();
-        double rawPoints = totalLines * rules.linesChangedWeight();
-        boolean capped = rawPoints > rules.maxSizeScore();
-        double points = Math.min(rawPoints, rules.maxSizeScore());
-        String reason = points > 0
-                ? "Diff size: %d lines changed (weight=%.2f)%s".formatted(
-                        totalLines, rules.linesChangedWeight(),
-                        capped ? " [capped from %.0f to %d]".formatted(rawPoints, rules.maxSizeScore()) : "")
-                : null;
-        return new ScoringResult(points, reason);
+        if (totalLines == 0) {
+            return new ScoringResult("size", 0, 0, null);
+        }
+
+        double raw = Math.log(1 + totalLines) / Math.log(2);
+        double normalized = Math.min(raw * rules.sizeScaleFactor(), rules.maxSizeScore());
+
+        String reason = "Diff size: %d lines (log2 normalized: %.1f)".formatted(totalLines, normalized);
+        return new ScoringResult("size", totalLines, normalized, reason);
     }
 }
