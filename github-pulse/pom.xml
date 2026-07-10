@@ -54,6 +54,12 @@
             <artifactId>quarkus-langchain4j-ai-gemini</artifactId>
         </dependency>
 
+        <!-- Picocli CLI -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-picocli</artifactId>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>io.quarkus</groupId>

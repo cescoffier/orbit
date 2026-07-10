@@ -3,10 +3,9 @@ package io.quarkus.orbit.pulse;
 import io.quarkus.orbit.pulse.model.ScoredPullRequest;
 import io.quarkus.orbit.pulse.service.AnalysisService;
 import io.quarkus.orbit.pulse.service.ReportService;
-import io.quarkus.runtime.QuarkusApplication;
-import io.quarkus.runtime.annotations.QuarkusMain;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import org.jboss.logging.Logger;
+import picocli.CommandLine;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,22 +15,22 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
-@QuarkusMain
-public class PulseCommand implements QuarkusApplication {
+@CommandLine.Command(name = "analyze", description = "Run full analysis across all repos and generate report")
+public class AnalyzeCommand implements Runnable {
 
-    private static final Logger LOG = Logger.getLogger(PulseCommand.class);
+    private static final Logger LOG = Logger.getLogger(AnalyzeCommand.class);
 
     private final AnalysisService analysisService;
     private final ReportService reportService;
 
-    public PulseCommand(AnalysisService analysisService, ReportService reportService) {
+    public AnalyzeCommand(AnalysisService analysisService, ReportService reportService) {
         this.analysisService = analysisService;
         this.reportService = reportService;
     }
 
     @Override
     @ActivateRequestContext
-    public int run(String... args) {
+    public void run() {
         try {
             LOG.info("Starting GitHub Pulse analysis...");
 
@@ -47,11 +46,9 @@ public class PulseCommand implements QuarkusApplication {
             int totalPrs = results.values().stream().mapToInt(List::size).sum();
             LOG.infof("Analysis complete. %d PRs flagged across %d repos. Report: %s",
                     totalPrs, results.size(), filename);
-
-            return 0;
         } catch (Exception e) {
             LOG.error("Analysis failed", e);
-            return 1;
+            throw new RuntimeException(e);
         }
     }
 

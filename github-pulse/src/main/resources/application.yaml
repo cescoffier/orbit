@@ -23,7 +23,7 @@ quarkus:
       generation: update
 
 pr-pulse:
-  global-threshold: 60
+  global-threshold: 40
   github-token: ${GITHUB_TOKEN}
   lookback-days: 14
 
@@ -32,13 +32,11 @@ pr-pulse:
       owner: "smallrye"
       description: "SmallRye Fault Tolerance - implementation of MicroProfile Fault Tolerance"
       rules:
-        lines-changed-weight: 0.3
-        critical-files-bonus: 25
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 45
-        enhancement-score: 25
-        bug-fix-score: 35
+        size-weight: 0.15
+        category-weight: 0.40
+        critical-path-weight: 0.25
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "implementation/core/src/main/java"
           - "implementation/fault-tolerance/src/main/java"
@@ -48,13 +46,11 @@ pr-pulse:
       owner: "smallrye"
       description: "Vert.x Mutiny API bindings and code generator"
       rules:
-        lines-changed-weight: 0.2
-        critical-files-bonus: 25
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 40
-        enhancement-score: 25
-        bug-fix-score: 30
+        size-weight: 0.15
+        category-weight: 0.35
+        critical-path-weight: 0.30
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "vertx-mutiny-code-generator/src/main/java"
           - "vertx-mutiny-clients/vertx-mutiny-core/src/main/java"
@@ -63,13 +59,11 @@ pr-pulse:
       owner: "smallrye"
       description: "SmallRye Mutiny - intuitive reactive programming library for Java"
       rules:
-        lines-changed-weight: 0.4
-        critical-files-bonus: 25
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 45
-        enhancement-score: 30
-        bug-fix-score: 30
+        size-weight: 0.20
+        category-weight: 0.35
+        critical-path-weight: 0.25
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "implementation/src/main/java/io/smallrye/mutiny"
 
@@ -77,13 +71,11 @@ pr-pulse:
       owner: "smallrye"
       description: "SmallRye GraphQL - implementation of MicroProfile GraphQL"
       rules:
-        lines-changed-weight: 0.3
-        critical-files-bonus: 20
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 40
-        enhancement-score: 25
-        bug-fix-score: 25
+        size-weight: 0.15
+        category-weight: 0.35
+        critical-path-weight: 0.30
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "server/implementation/src/main/java"
           - "client/implementation/src/main/java"
@@ -94,13 +86,11 @@ pr-pulse:
       owner: "smallrye"
       description: "Java annotation indexer and offline reflection library"
       rules:
-        lines-changed-weight: 0.4
-        critical-files-bonus: 30
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 45
-        enhancement-score: 30
-        bug-fix-score: 35
+        size-weight: 0.20
+        category-weight: 0.35
+        critical-path-weight: 0.25
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "core/src/main/java/org/jboss/jandex"
 
@@ -108,13 +98,11 @@ pr-pulse:
       owner: "smallrye"
       description: "SmallRye Reactive Messaging - framework for building event-driven applications"
       rules:
-        lines-changed-weight: 0.3
-        critical-files-bonus: 20
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 45
-        enhancement-score: 30
-        bug-fix-score: 25
+        size-weight: 0.15
+        category-weight: 0.35
+        critical-path-weight: 0.30
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "smallrye-reactive-messaging-provider/src/main/java"
           - "smallrye-reactive-messaging-kafka/src/main/java"
@@ -125,13 +113,11 @@ pr-pulse:
       owner: "smallrye"
       description: "SmallRye OpenAPI - implementation of MicroProfile OpenAPI"
       rules:
-        lines-changed-weight: 0.3
-        critical-files-bonus: 25
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 40
-        enhancement-score: 25
-        bug-fix-score: 30
+        size-weight: 0.15
+        category-weight: 0.35
+        critical-path-weight: 0.30
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "core/src/main/java"
           - "extension-jaxrs/src/main/java"
@@ -140,13 +126,11 @@ pr-pulse:
       owner: "smallrye"
       description: "SmallRye Stork - service discovery and client-side load balancing"
       rules:
-        lines-changed-weight: 0.3
-        critical-files-bonus: 25
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 40
-        enhancement-score: 25
-        bug-fix-score: 30
+        size-weight: 0.15
+        category-weight: 0.35
+        critical-path-weight: 0.30
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "core/src/main/java"
           - "service-discovery"
@@ -157,13 +141,11 @@ pr-pulse:
       owner: "smallrye"
       description: "SmallRye Common - shared utilities across SmallRye projects"
       rules:
-        lines-changed-weight: 0.4
-        critical-files-bonus: 25
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 45
-        enhancement-score: 30
-        bug-fix-score: 30
+        size-weight: 0.20
+        category-weight: 0.35
+        critical-path-weight: 0.25
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "classloader/src/main/java"
           - "resource/src/main/java"
@@ -176,13 +158,11 @@ pr-pulse:
       owner: "smallrye"
       description: "SmallRye Config - implementation of MicroProfile Config"
       rules:
-        lines-changed-weight: 0.4
-        critical-files-bonus: 25
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 45
-        enhancement-score: 35
-        bug-fix-score: 30
+        size-weight: 0.20
+        category-weight: 0.40
+        critical-path-weight: 0.20
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "implementation/src/main/java/io/smallrye/config"
           - "common/src/main/java"
@@ -191,13 +171,11 @@ pr-pulse:
       owner: "smallrye"
       description: "SmallRye JWT - implementation of MicroProfile JWT Auth"
       rules:
-        lines-changed-weight: 0.3
-        critical-files-bonus: 25
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 40
-        enhancement-score: 20
-        bug-fix-score: 30
+        size-weight: 0.15
+        category-weight: 0.35
+        critical-path-weight: 0.30
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "implementation/common/src/main/java"
           - "implementation/jwt-auth/src/main/java"
@@ -207,13 +185,11 @@ pr-pulse:
       owner: "smallrye"
       description: "SmallRye Health - implementation of MicroProfile Health"
       rules:
-        lines-changed-weight: 0.3
-        critical-files-bonus: 20
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 35
-        enhancement-score: 20
-        bug-fix-score: 20
+        size-weight: 0.15
+        category-weight: 0.35
+        critical-path-weight: 0.30
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "implementation/src/main/java"
 
@@ -221,13 +197,11 @@ pr-pulse:
       owner: "smallrye"
       description: "SmallRye Context Propagation - implementation of MicroProfile Context Propagation"
       rules:
-        lines-changed-weight: 0.4
-        critical-files-bonus: 25
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 45
-        enhancement-score: 30
-        bug-fix-score: 30
+        size-weight: 0.20
+        category-weight: 0.35
+        critical-path-weight: 0.25
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "core/src/main/java/io/smallrye/context"
 
@@ -235,13 +209,11 @@ pr-pulse:
       owner: "quarkusio"
       description: "Quarkus - supersonic subatomic Java framework"
       rules:
-        lines-changed-weight: 0.15
-        critical-files-bonus: 15
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 45
-        enhancement-score: 30
-        bug-fix-score: 25
+        size-weight: 0.10
+        category-weight: 0.40
+        critical-path-weight: 0.30
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "core/deployment/src/main/java"
           - "core/runtime/src/main/java"
@@ -253,13 +225,11 @@ pr-pulse:
       owner: "quarkusio"
       description: "Quarkus HTTP - Undertow-based HTTP layer for Quarkus"
       rules:
-        lines-changed-weight: 0.3
-        critical-files-bonus: 25
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 45
-        enhancement-score: 30
-        bug-fix-score: 35
+        size-weight: 0.15
+        category-weight: 0.35
+        critical-path-weight: 0.30
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "core/src/main/java"
           - "servlet/src/main/java"
@@ -271,13 +241,11 @@ pr-pulse:
       owner: "quarkiverse"
       description: "Quarkus MCP Server - Model Context Protocol server extension"
       rules:
-        lines-changed-weight: 0.3
-        critical-files-bonus: 20
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 45
-        enhancement-score: 30
-        bug-fix-score: 30
+        size-weight: 0.15
+        category-weight: 0.35
+        critical-path-weight: 0.30
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "core/deployment/src/main/java"
           - "core/runtime/src/main/java"
@@ -288,13 +256,11 @@ pr-pulse:
       owner: "quarkiverse"
       description: "Quarkus LangChain4j - LLM integration extension for Quarkus"
       rules:
-        lines-changed-weight: 0.2
-        critical-files-bonus: 20
-        comment-activity-weight: 5
-        max-size-score: 100
-        feature-score: 45
-        enhancement-score: 30
-        bug-fix-score: 30
+        size-weight: 0.10
+        category-weight: 0.40
+        critical-path-weight: 0.30
+        comment-weight: 0.20
+        size-scale-factor: 8.1
         critical-paths:
           - "core/deployment/src/main/java"
           - "core/runtime/src/main/java"
