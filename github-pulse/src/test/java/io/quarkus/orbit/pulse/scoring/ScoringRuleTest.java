@@ -9,18 +9,22 @@ import static org.junit.jupiter.api.Assertions.*;
 class ScoringRuleTest {
 
     @Test
-    void scoringResultWithMetadata() {
-        var result = new ScoringRule.ScoringResult(10.0, "reason", Map.of("key", "value"));
-        assertEquals(10.0, result.points());
+    void scoringResultWithAllFields() {
+        var result = new ScoringRule.ScoringResult("size", 42.0, 85.0, "reason", Map.of("key", "value"));
+        assertEquals("size", result.ruleName());
+        assertEquals(42.0, result.points());
+        assertEquals(85.0, result.normalizedPoints());
         assertEquals("reason", result.reason());
         assertEquals("value", result.metadata().get("key"));
     }
 
     @Test
-    void scoringResultWithoutMetadataDefaultsToEmptyMap() {
-        var result = new ScoringRule.ScoringResult(5.0, "reason");
-        assertEquals(5.0, result.points());
-        assertNotNull(result.metadata());
+    void scoringResultConvenienceConstructor() {
+        var result = new ScoringRule.ScoringResult("category", 30.0, 100.0, "FEATURE");
+        assertEquals("category", result.ruleName());
+        assertEquals(30.0, result.points());
+        assertEquals(100.0, result.normalizedPoints());
+        assertEquals("FEATURE", result.reason());
         assertTrue(result.metadata().isEmpty());
     }
 }

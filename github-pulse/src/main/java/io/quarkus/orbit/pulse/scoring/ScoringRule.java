@@ -9,9 +9,9 @@ public interface ScoringRule {
 
     ScoringResult evaluate(PullRequestData pr, PrPulseConfig.Rules rules);
 
-    record ScoringResult(double points, String reason, Map<String, Object> metadata) {
-        public ScoringResult(double points, String reason) {
-            this(points, reason, Map.of());
+    record ScoringResult(String ruleName, double points, double normalizedPoints, String reason, Map<String, Object> metadata) {
+        public ScoringResult(String ruleName, double points, double normalizedPoints, String reason) {
+            this(ruleName, points, normalizedPoints, reason, Map.of());
         }
     }
 }
