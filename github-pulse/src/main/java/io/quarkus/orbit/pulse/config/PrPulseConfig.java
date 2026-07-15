@@ -19,11 +19,21 @@ public interface PrPulseConfig {
 
     List<Repository> repositories();
 
+    enum ReleaseStrategy {
+        /** Walk commit history from the tag and collect associatedPullRequests (standard merge workflow). */
+        COMMIT_GRAPH,
+        /** Parse the structured markdown changelog embedded in the GitHub release body. */
+        RELEASE_NOTES
+    }
+
     interface Repository {
         String name();
         String owner();
         Optional<String> description();
         Rules rules();
+
+        @WithDefault("COMMIT_GRAPH")
+        ReleaseStrategy releaseStrategy();
     }
 
     interface Rules {

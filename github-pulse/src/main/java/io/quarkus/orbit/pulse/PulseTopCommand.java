@@ -20,7 +20,7 @@ import java.util.Map;
 @CommandLine.Command(
         name = "pulse",
         mixinStandardHelpOptions = true,
-        subcommands = {AnalyzeCommand.class, ScoresCommand.class}
+        subcommands = {AnalyzeCommand.class, ScoresCommand.class, ReleaseCommand.class}
 )
 public class PulseTopCommand implements Runnable {
 

@@ -31,6 +31,7 @@ pr-pulse:
     - name: "smallrye-fault-tolerance"
       owner: "smallrye"
       description: "SmallRye Fault Tolerance - implementation of MicroProfile Fault Tolerance"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.40
@@ -45,6 +46,7 @@ pr-pulse:
     - name: "smallrye-mutiny-vertx-bindings"
       owner: "smallrye"
       description: "Vert.x Mutiny API bindings and code generator"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.35
@@ -58,6 +60,7 @@ pr-pulse:
     - name: "smallrye-mutiny"
       owner: "smallrye"
       description: "SmallRye Mutiny - intuitive reactive programming library for Java"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.20
         category-weight: 0.35
@@ -70,6 +73,7 @@ pr-pulse:
     - name: "smallrye-graphql"
       owner: "smallrye"
       description: "SmallRye GraphQL - implementation of MicroProfile GraphQL"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.35
@@ -77,6 +81,7 @@ pr-pulse:
         comment-weight: 0.20
         size-scale-factor: 8.1
         critical-paths:
+          - "server/implementation-cdi/src/main/java"
           - "server/implementation/src/main/java"
           - "client/implementation/src/main/java"
           - "common/schema-model/src/main/java"
@@ -84,6 +89,7 @@ pr-pulse:
 
     - name: "jandex"
       owner: "smallrye"
+      release-strategy: COMMIT_GRAPH
       description: "Java annotation indexer and offline reflection library"
       rules:
         size-weight: 0.20
@@ -96,6 +102,7 @@ pr-pulse:
 
     - name: "smallrye-reactive-messaging"
       owner: "smallrye"
+      release-strategy: COMMIT_GRAPH
       description: "SmallRye Reactive Messaging - framework for building event-driven applications"
       rules:
         size-weight: 0.15
@@ -111,6 +118,7 @@ pr-pulse:
 
     - name: "smallrye-open-api"
       owner: "smallrye"
+      release-strategy: COMMIT_GRAPH
       description: "SmallRye OpenAPI - implementation of MicroProfile OpenAPI"
       rules:
         size-weight: 0.15
@@ -124,6 +132,7 @@ pr-pulse:
 
     - name: "smallrye-stork"
       owner: "smallrye"
+      release-strategy: COMMIT_GRAPH
       description: "SmallRye Stork - service discovery and client-side load balancing"
       rules:
         size-weight: 0.15
@@ -139,6 +148,7 @@ pr-pulse:
 
     - name: "smallrye-common"
       owner: "smallrye"
+      release-strategy: COMMIT_GRAPH
       description: "SmallRye Common - shared utilities across SmallRye projects"
       rules:
         size-weight: 0.20
@@ -157,6 +167,7 @@ pr-pulse:
     - name: "smallrye-config"
       owner: "smallrye"
       description: "SmallRye Config - implementation of MicroProfile Config"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.20
         category-weight: 0.40
@@ -170,6 +181,7 @@ pr-pulse:
     - name: "smallrye-jwt"
       owner: "smallrye"
       description: "SmallRye JWT - implementation of MicroProfile JWT Auth"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.35
@@ -184,6 +196,7 @@ pr-pulse:
     - name: "smallrye-health"
       owner: "smallrye"
       description: "SmallRye Health - implementation of MicroProfile Health"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.15
         category-weight: 0.35
@@ -196,6 +209,7 @@ pr-pulse:
     - name: "smallrye-context-propagation"
       owner: "smallrye"
       description: "SmallRye Context Propagation - implementation of MicroProfile Context Propagation"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.20
         category-weight: 0.35
@@ -208,6 +222,7 @@ pr-pulse:
     - name: "quarkus"
       owner: "quarkusio"
       description: "Quarkus - supersonic subatomic Java framework"
+      release-strategy: COMMIT_GRAPH
       rules:
         size-weight: 0.10
         category-weight: 0.40
@@ -223,6 +238,7 @@ pr-pulse:
 
     - name: "quarkus-http"
       owner: "quarkusio"
+      release-strategy: COMMIT_GRAPH
       description: "Quarkus HTTP - Undertow-based HTTP layer for Quarkus"
       rules:
         size-weight: 0.15
@@ -239,6 +255,7 @@ pr-pulse:
 
     - name: "quarkus-mcp-server"
       owner: "quarkiverse"
+      release-strategy: COMMIT_GRAPH
       description: "Quarkus MCP Server - Model Context Protocol server extension"
       rules:
         size-weight: 0.15
@@ -254,6 +271,7 @@ pr-pulse:
 
     - name: "quarkus-langchain4j"
       owner: "quarkiverse"
+      release-strategy: COMMIT_GRAPH
       description: "Quarkus LangChain4j - LLM integration extension for Quarkus"
       rules:
         size-weight: 0.10

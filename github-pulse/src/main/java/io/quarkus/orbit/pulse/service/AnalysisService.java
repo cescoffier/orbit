@@ -108,6 +108,7 @@ public class AnalysisService {
 
         persistResults(scored, repo.rules());
 
+
         LOG.infof("Completed %s/%s: %d PRs above threshold", repo.owner(), repo.name(), scored.size());
         return scored;
     }
@@ -116,8 +117,8 @@ public class AnalysisService {
         List<PullRequestData> toProcess = forceRescore
                 ? prs
                 : prs.stream()
-                    .filter(pr -> !isAlreadyProcessed(pr))
-                    .toList();
+//                .filter(pr -> !isAlreadyProcessed(pr))
+                .toList();
 
         if (toProcess.isEmpty()) {
             return List.of();
@@ -145,11 +146,15 @@ public class AnalysisService {
         requestContext.activate();
         try {
             ScoredPullRequest scored = scoringEngine.score(pr, rules);
+
+            LOG.infof("PR #%d: score=%.2f, title=%s",
+                    scored.pr().number(), scored.score(), scored.pr().title());
             if (scored.score() >= config.globalThreshold()) {
                 return scored;
             }
             return null;
         } catch (Exception e) {
+            e.printStackTrace();
             LOG.warnf("Scoring failed for PR #%d in %s: %s",
                     pr.number(), pr.repoIdentifier(), e.getMessage());
             return null;
@@ -173,7 +178,7 @@ public class AnalysisService {
 
             // Upsert: look up existing score or create new
             PullRequestScore score = PullRequestScore.<PullRequestScore>find(
-                    "repository = ?1 and prNumber = ?2", repo, pr.number())
+                            "repository = ?1 and prNumber = ?2", repo, pr.number())
                     .firstResultOptional()
                     .orElseGet(PullRequestScore::new);
 
