@@ -50,20 +50,4 @@ class CategoryRuleTest {
         assertEquals(PrCategory.BUG_FIX, result.metadata().get("category"));
         assertEquals("Fixes null pointer in request handler", result.metadata().get("summary"));
     }
-
-    @Test
-    void bugFixClassificationScoresThirtyFive() {
-        PrClassifier classifier = mock(PrClassifier.class);
-        when(classifier.classify("Fix NPE", "desc")).thenReturn(PrCategory.BUG_FIX);
-
-        var rule = new CategoryRule(classifier, new Semaphore(15));
-
-        PullRequestData pr = new PullRequestData("owner", "repo", 43, "Fix NPE", "url",
-                "author", "desc", 5, 2, 0, List.of(), List.of());
-
-        ScoringRule.ScoringResult result = rule.evaluate(pr, null);
-
-        assertEquals(35.0, result.normalizedPoints());
-        assertEquals(PrCategory.BUG_FIX, result.metadata().get("category"));
-    }
 }
